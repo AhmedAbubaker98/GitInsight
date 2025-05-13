@@ -1,0 +1,40 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.pyc
+*.pyo
+test.py
+
+# Git
+.git
+.gitignore
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Docker / Python config
+*.env
+*.ini
+
+# OS & IDE files
+.DS_Store
+.idea/
+.vscode/
+
+# Tests and local files
+tests/
+*.log
+*.sqlite3
+*.bak
+*.dump
+
+# Local data (e.g., temp clones)
+gitinsight_*/
+
+# Do not include these in final container
+*.md
+*.ipynb
+
+randoms/

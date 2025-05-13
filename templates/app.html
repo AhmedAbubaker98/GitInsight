@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitInsight - Analyze Repository</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        /* Tabs Styling */
+        .tabs {
+            overflow: hidden;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 1rem; /* Match button font size */
+        }
+        .tab-button:hover {
+            background-color: #f0f0f0; /* Lighter hover */
+        }
+        .tab-button.active {
+            background-color: #e0e0e0; /* Slightly darker active */
+            font-weight: bold;
+            border-bottom: 2px solid #007bff;
+        }
+        .tab-content {
+            display: none; /* Hidden by default */
+            padding-top: 10px; /* Space below tabs */
+        }
+
+        /* History List Styling */
+        #history-list-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #history-list-container li {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #history-list-container li:hover {
+            background-color: #f9f9f9;
+        }
+        #history-list-container li .repo-url {
+            font-weight: bold;
+            color: #0056b3;
+            display: block; /* Make it take full width before other elements */
+            margin-bottom: 4px;
+        }
+        #history-list-container li .params,
+        #history-list-container li .timestamp {
+            font-size: 0.85em;
+            color: #555;
+            display: block; /* New line for each */
+            margin-bottom: 2px;
+        }
+        #history-list-container li .timestamp {
+            margin-top: 2px;
+        }
+
+        /* History Detail Styling */
+        #history-detail-container {
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        #history-detail-container h3 { margin-top: 0; }
+        #history-detail-container button { margin-bottom: 15px; }
+        #history-detail-summary { /* Uses .result-content styling */ }
+
+        /* Existing styles from original app.html are assumed to be in style.css or below */
+        .progress-steps { /* ... */ }
+        .progress-step { /* ... */ }
+        .progress-connector { /* ... */ }
+        .result-content { /* ... */ }
+        .app-header { /* ... */ }
+        /* ... other styles ... */
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="container header-content">
+            <span class="logo" style="color: black;">GitInsight</span>
+            <div class="user-info">
+                {% if user %}<!-- Logged in -->
+                    <span style="color: black;">Welcome, {{ user.login }}!</span>
+                    <button onclick="logout()" class="button-logout" style="color: black;">Logout</button>
+                {% elif is_guest %}<!-- Guest Mode -->
+                    <span style="color: black;">Guest Mode</span>
+                    <button onclick="goToLogin()" class="button-login" style="color: black;">Login</button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'analyzeTab')">Analyze</button>
+            <!-- Conditionally show History tab -->
+            {% if user and not is_guest and db_enabled %}<!-- db_enabled passed from main.py -->
+            <button class="tab-button" onclick="openTab(event, 'historyTab')">History</button>
+            {% endif %}
+        </div>
+
+        <!-- Analyze Tab Content -->
+        <div id="analyzeTab" class="tab-content" style="display:block;">
+            <h1>Analyze a GitHub Repository</h1>
+            {% if is_guest %}<p class="guest-note">You are in Guest Mode. Only public repositories can be analyzed. <a href="/">Login with GitHub</a> to analyze private repositories and view history.</p>{% endif %}
+
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <label for="repoUrl">GitHub Repository URL:</label>
+                    <input type="url" id="repoUrl" name="repoUrl" placeholder="e.g., https://github.com/owner/repo" required pattern="https?://github\.com/.*" title="Please enter a valid GitHub repository URL."/>
+                </div>
+                <div class="form-group">
+                    <label for="lang">Summary Language:</label>
+                    <select id="lang" name="lang"><option value="en" selected>English</option><option value="es">Spanish</option><!-- ...more --></select>
+                </div>
+                 <div class="form-group">
+                    <label for="size">Summary Length:</label>
+                    <select id="size" name="size"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option></select>
+                 </div>
+                 <div class="form-group">
+                    <label for="technicality">Technical Level:</label>
+                    <select id="technicality" name="technicality"><option value="non-technical">Non-Technical</option><option value="technical" selected>Technical</option><option value="expert">Expert</option></select>
+                </div>
+                <button type="submit" id="submitButton" class="button-primary">Analyze</button>
+            </form>
+
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <h2>Analysis Progress</h2><div id="progress-steps"></div><div id="progress-message" class="progress-message">Starting...</div>
+            </div>
+            <div id="result-container" class="result-container" style="display: none;">
+                <h2>Analysis Result</h2><div id="result" class="result-content"></div>
+            </div>
+        </div> <!-- End Analyze Tab -->
+
+        <!-- History Tab Content -->
+        {% if user and not is_guest and db_enabled %}
+        <div id="historyTab" class="tab-content" style="display:none;">
+            <h2>Analysis History</h2>
+            <div id="history-list-container"><p>Loading history...</p></div>
+            <div id="history-detail-container" style="display:none;">
+                <button onclick="showHistoryList()" class="button-secondary">&laquo; Back to History List</button>
+                <h3 id="history-detail-repo"></h3>
+                <p id="history-detail-params"></p>
+                <p id="history-detail-timestamp"></p>
+                <h4 style="margin-top: 20px; margin-bottom: 5px;">Generated Summary:</h4>
+                <div id="history-detail-summary" class="result-content"></div>
+            </div>
+        </div> <!-- End History Tab -->
+        {% endif %}
+
+    </div> <!-- End Container -->
+
+    <script>
+        // --- DOM Elements (existing) ---
+        const analyzeForm = document.getElementById("analyzeForm");
+        // ... (other existing DOM elements for analysis tab) ...
+        const submitButton = document.getElementById("submitButton");
+        const progressContainer = document.getElementById("progress-container");
+        const progressSteps = document.getElementById("progress-steps");
+        const progressMessage = document.getElementById("progress-message");
+        const resultContainer = document.getElementById("result-container");
+        const resultDiv = document.getElementById("result");
+
+        // --- DOM Elements (NEW for History) ---
+        const historyListContainer = document.getElementById('history-list-container');
+        const historyDetailContainer = document.getElementById('history-detail-container');
+        const historyDetailRepo = document.getElementById('history-detail-repo');
+        const historyDetailParams = document.getElementById('history-detail-params');
+        const historyDetailTimestamp = document.getElementById('history-detail-timestamp');
+        const historyDetailSummary = document.getElementById('history-detail-summary');
+
+        // --- Helper Functions (existing: logout, goToLogin, displayError, updateProgress, updateStepIndicator, displayResult) ---
+        function logout() { window.location.href = "/logout"; }
+        function goToLogin() { window.location.href = "/"; }
+        // ... (displayError, updateProgress, etc. remain the same as in original provided code) ...
+        function displayError(message) {
+            progressMessage.textContent = `Error: ${message}`;
+            progressMessage.classList.add("error");
+            progressSteps.innerHTML = '';
+            submitButton.disabled = false;
+        }
+        function updateProgress(status, step = null, total_steps = null, component = null) {
+            let msg = status;
+            if (component) msg = `[${component}] ${status}`;
+            progressMessage.textContent = msg;
+            progressMessage.classList.remove("error");
+            if (step && total_steps) {
+                 updateStepIndicator(step, total_steps);
+            }
+        }
+        function updateStepIndicator(currentStep, totalSteps) {
+            progressSteps.innerHTML = '';
+            for (let i = 1; i <= totalSteps; i++) {
+                const stepSpan = document.createElement('span');
+                stepSpan.classList.add('progress-step');
+                if (i < currentStep) { stepSpan.classList.add('completed'); stepSpan.textContent = '✓'; }
+                else if (i === currentStep) { stepSpan.classList.add('active'); stepSpan.textContent = i; }
+                else { stepSpan.textContent = i; }
+                progressSteps.appendChild(stepSpan);
+                 if (i < totalSteps) {
+                     const connector = document.createElement('span');
+                     connector.classList.add('progress-connector');
+                     progressSteps.appendChild(connector);
+                 }
+            }
+        }
+        function displayResult(summaryHtml) {
+            resultDiv.innerHTML = summaryHtml;
+            resultContainer.style.display = 'block';
+            progressContainer.style.display = 'none';
+            submitButton.disabled = false;
+        }
+
+
+        // --- Tab Management (NEW) ---
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            const currentTab = document.getElementById(tabName);
+            if (currentTab) {
+                currentTab.style.display = "block";
+            }
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.className += " active";
+            }
+
+
+            if (tabName === 'historyTab' && historyListContainer) { // Check if history tab exists
+                fetchAnalysisHistory();
+                showHistoryList(); // Ensure detail view is hidden initially
+            }
+        }
+
+        // --- History Fetching and Display (NEW) ---
+        async function fetchAnalysisHistory() {
+            if (!historyListContainer) return; // Safety check
+            historyListContainer.innerHTML = '<p>Loading history...</p>';
+
+            try {
+                const response = await fetch('/history');
+                if (!response.ok) {
+                    let errorMsg = `Failed to load history: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.detail || errorMsg;
+                    } catch (e) { /* ignore if response not json */ }
+
+                    if (response.status === 401) {
+                        historyListContainer.innerHTML = '<p>Please log in to view history.</p>';
+                    } else {
+                         historyListContainer.innerHTML = `<p class="error-message">Error: ${errorMsg}</p>`;
+                    }
+                    return;
+                }
+                const historyItems = await response.json();
+                displayHistoryList(historyItems);
+            } catch (error) {
+                console.error("Error fetching history:", error);
+                historyListContainer.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
+            }
+        }
+
+        function displayHistoryList(items) {
+            if (!historyListContainer) return;
+            if (items.length === 0) {
+                historyListContainer.innerHTML = '<p>No analysis history found.</p>';
+                return;
+            }
+            const ul = document.createElement('ul');
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.setAttribute('data-id', item.id);
+                li.onclick = () => fetchHistoryDetail(item.id);
+
+                const repoSpan = document.createElement('span');
+                repoSpan.className = 'repo-url';
+                repoSpan.textContent = item.repository_url;
+                li.appendChild(repoSpan);
+
+                const paramsUsed = Object.entries(item.parameters_used)
+                    .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
+                    .join(', ');
+                const paramsSpan = document.createElement('span');
+                paramsSpan.className = 'params';
+                paramsSpan.textContent = `Parameters: ${paramsUsed}`;
+                li.appendChild(paramsSpan);
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'timestamp';
+                timeSpan.textContent = `Analyzed: ${new Date(item.timestamp).toLocaleString()}`;
+                li.appendChild(timeSpan);
+
+                ul.appendChild(li);
+            });
+            historyListContainer.innerHTML = ''; // Clear loading/error message
+            historyListContainer.appendChild(ul);
+        }
+
+        async function fetchHistoryDetail(historyId) {
+            if (!historyDetailContainer || !historyListContainer) return;
+            historyListContainer.style.display = 'none';
+            historyDetailContainer.style.display = 'block';
+            historyDetailSummary.innerHTML = '<p>Loading summary...</p>';
+
+            try {
+                const response = await fetch(`/history/${historyId}`);
+                if (!response.ok) {
+                    let errorMsg = `Failed to load history item: ${response.status}`;
+                     try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.detail || errorMsg;
+                    } catch (e) { /* ignore */ }
+                    throw new Error(errorMsg);
+                }
+                const item = await response.json();
+                displayHistoryDetail(item);
+            } catch (error) {
+                console.error("Error fetching history detail:", error);
+                historyDetailSummary.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
+            }
+        }
+
+        function displayHistoryDetail(item) {
+            if (!historyDetailContainer) return;
+            historyDetailRepo.textContent = `Repository: ${item.repository_url}`;
+            const paramsUsed = Object.entries(item.parameters_used)
+                .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
+                .join(', ');
+            historyDetailParams.textContent = `Parameters: ${paramsUsed}`;
+            historyDetailTimestamp.textContent = `Analyzed on: ${new Date(item.timestamp).toLocaleString()}`;
+            historyDetailSummary.innerHTML = item.summary_content || "<p><em>No summary content available for this entry.</em></p>";
+        }
+
+        function showHistoryList() {
+            if (!historyListContainer || !historyDetailContainer) return;
+            historyDetailContainer.style.display = 'none';
+            historyListContainer.style.display = 'block';
+            // Optionally re-fetch or just show cached list
+            // fetchAnalysisHistory(); // Uncomment to refresh list every time user goes back
+        }
+
+        // --- Event Listener (existing for analyzeForm) ---
+        analyzeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            // ... (rest of the existing submit handler from original provided code)
+            resultContainer.style.display = 'none';
+            resultDiv.innerHTML = '';
+            progressContainer.style.display = 'block';
+            progressSteps.innerHTML = '';
+            progressMessage.textContent = 'Initiating analysis...';
+            progressMessage.classList.remove("error");
+            submitButton.disabled = true;
+
+            const payload = {
+                url: document.getElementById("repoUrl").value, // Ensure IDs are correct
+                lang: document.getElementById("lang").value,
+                size: document.getElementById("size").value,
+                technicality: document.getElementById("technicality").value,
+            };
+
+            try {
+                const response = await fetch("/analyze/repo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/x-ndjson" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`Analysis request failed: ${response.status} ${response.statusText}. ${errorText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let finalSummary = null;
+                let serverErrorProcessed = false;
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                         if (buffer.trim()) {
+                            try {
+                                const json = JSON.parse(buffer);
+                                if (json.hasOwnProperty('error')) {
+                                    serverErrorProcessed = true;
+                                    throw new Error(String(json.error) || "Unknown error from server (final chunk)");
+                                } else if (json.summary) {
+                                    finalSummary = json.summary;
+                                } else if (json.status) {
+                                    updateProgress(json.status, json.step, json.total_steps, json.component);
+                                }
+                            } catch (parseOrProcessingError) {
+                                serverErrorProcessed = true;
+                                if (parseOrProcessingError instanceof SyntaxError) {
+                                     console.error("Error parsing final buffer chunk:", parseOrProcessingError, "Buffer:", buffer);
+                                     throw new Error(`Failed to parse final server update: ${buffer.substring(0,100)}...`);
+                                }
+                                throw parseOrProcessingError;
+                            }
+                         }
+                        break;
+                    }
+                    buffer += decoder.decode(value, { stream: true });
+                    let newlineIndex;
+                    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                        const line = buffer.slice(0, newlineIndex).trim();
+                        buffer = buffer.slice(newlineIndex + 1);
+                        if (line) {
+                            try {
+                                const data = JSON.parse(line);
+                                if (data.hasOwnProperty('error')) {
+                                    serverErrorProcessed = true;
+                                    throw new Error(String(data.error) || "Unknown error from server");
+                                } else if (data.summary) {
+                                    finalSummary = data.summary;
+                                    updateProgress(data.status || "Completed!", data.step, data.total_steps, data.component);
+                                } else if (data.summary_chunk) { /* Existing logic */ }
+                                else if (data.status) {
+                                    updateProgress(data.status, data.step, data.total_steps, data.component);
+                                }
+                            } catch (parseOrProcessingError) {
+                                serverErrorProcessed = true;
+                                if (parseOrProcessingError instanceof SyntaxError) {
+                                    console.error("Failed to parse JSON line:", parseOrProcessingError, "Line:", line);
+                                    throw new Error(`Failed to parse server update: ${line.substring(0,100)}...`);
+                                }
+                                throw parseOrProcessingError;
+                            }
+                        }
+                    }
+                }
+                if (finalSummary !== null) {
+                    displayResult(finalSummary);
+                } else if (!serverErrorProcessed) {
+                    displayError("Analysis completed, but no final summary was received.");
+                }
+            } catch (err) {
+                console.error("Analysis Fetch Error:", err);
+                displayError(err.message || "An unknown error occurred during analysis.");
+            }
+        });
+
+        // Initialize default tab on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const defaultTabButton = document.querySelector('.tab-button.active');
+            if (defaultTabButton) {
+                // Simulate a click if needed, or just ensure the content is visible
+                // openTab(null, defaultTabButton.getAttribute('onclick').match(/'([^']+)'/)[1]);
+                // Simpler: just ensure the 'analyzeTab' is shown by default as per HTML.
+                // If you want a different default, adjust the 'active' class and 'display:block' in HTML.
+            }
+        });
+    </script>
+    <!-- Existing style block for progress, result, header etc. can be merged or kept separate -->
+</body>
+</html>

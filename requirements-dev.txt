@@ -1,0 +1,21 @@
+#dev
+pytest
+pytest-asyncio
+respx
+psql
+psycopg2
+#standard
+google-generativeai
+google-cloud-aiplatform[tokenization]
+uvicorn
+fastapi
+authlib 
+python-dotenv
+jinja2
+httpx
+itsdangerous
+sqlalchemy       # Added for ORM
+asyncpg          # Added for async PostgreSQL driver
+# alembic        # Optional: For database migrations (recommended for production)
+psycopg2-binary  
+pydantic_settings

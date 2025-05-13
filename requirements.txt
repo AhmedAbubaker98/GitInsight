@@ -1,0 +1,14 @@
+google-generativeai
+google-cloud-aiplatform[tokenization]
+uvicorn
+fastapi
+authlib 
+python-dotenv
+jinja2
+httpx
+itsdangerous
+sqlalchemy       # Added for ORM
+asyncpg          # Added for async PostgreSQL driver
+# alembic        # Optional: For database migrations (recommended for production)
+psycopg2-binary  # Might be needed by Alembic or for synchronous operations if any
+pydantic_settings

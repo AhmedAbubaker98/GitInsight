@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitInsight - Welcome</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to GitInsight</h1>
+        <p>Analyze GitHub repositories to get quick summaries and insights.</p>
+
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <div class="auth-buttons">
+            {% if github_enabled %}
+            <button onclick="githubLogin()" class="button-primary">
+                <img src="/static/github-mark.svg" alt="" class="icon"/> Login with GitHub
+            </button>
+            {% else %}
+            <p>GitHub login is currently disabled.</p>
+            {% endif %}
+            <button onclick="guestContinue()" class="button-secondary">Continue as Guest</button>
+            <p class="guest-note">Guest mode allows analyzing public repositories only.</p>
+        </div>
+    </div>
+
+    <script>
+        function githubLogin() {
+            window.location.href = "/login/github";
+        }
+
+        function guestContinue() {
+            // Guest mode now has its own route /guest which serves the app template
+            window.location.href = "/guest";
+        }
+
+        // Show error if present in query string
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get("error");
+            const errorDiv = document.getElementById("error-message");
+            if (error) {
+                errorDiv.textContent = `Error: ${decodeURIComponent(error.replace(/\+/g, " "))}`;
+                errorDiv.style.display = 'block'; // Show the error div
+                 // Optional: Clear the error from the URL after displaying it
+                // window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+</body>
+</html>
