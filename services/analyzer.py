@@ -25,7 +25,7 @@ class AIGenerationError(AISummaryError):
     pass
 
 # --- Configuration ---
-MODEL_NAME = 'gemini-2.5-pro-preview-05-06' # Updated to a common valid model
+MODEL_NAME = 'gemini-2.0-flash' # Updated to a common valid model
 TOKENIZER_MODEL = "gemini-1.5-pro-002" # Match model for tokenizer
 
 if not settings.MY_GOOGLE_API_KEY:
