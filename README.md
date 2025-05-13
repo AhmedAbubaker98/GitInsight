@@ -101,7 +101,7 @@ Open your browser and go to `http://localhost:8000`.
 * If you are logged in and the database is configured, click the "History" tab. 
 * A list of your past analyses will be displayed. 
 * Click on an item to view its detailed summary. 
-## 🔑 Environment Variables 
+## 🔑 Environment Variables (this section is being continously updated)
 Create a `.env` file in the project root with the following variables: 
 ```
 # .env.example
