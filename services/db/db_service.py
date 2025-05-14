@@ -6,7 +6,7 @@ from sqlalchemy import desc
 from typing import List, Optional, Dict, Any, AsyncGenerator
 from datetime import datetime, timezone
 
-from services.db_models import Base, AnalysisHistory
+from services.db.db_models import Base, AnalysisHistory
 from core.config import settings # Import centralized settings
 
 logger = logging.getLogger(__name__)

@@ -1,12 +1,12 @@
 from services.parser import parse_repo
 from services.github import (CloningError, URLParsingError, clone_repo,
                              parse_github_url)
-from services.db_service import (get_analysis_by_id, get_analysis_history,
+from services.db.db_service import (get_analysis_by_id, get_analysis_history,
                                  get_db_session, init_db, log_analysis_request)
-from services.db_service import engine as db_engine
-from services.db_models import AnalysisHistory as DBAnalysisHistory_model
+from services.db.db_service import engine as db_engine
+from services.db.db_models import AnalysisHistory as DBAnalysisHistory_model
 from services.analyzer import generate_summary_stream
-from core.stream_analysis import stream_analysis
+from services.stream_analysis import stream_analysis
 from sqlalchemy.ext.asyncio import AsyncSession
 import asyncio
 import json

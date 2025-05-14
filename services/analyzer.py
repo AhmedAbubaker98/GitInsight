@@ -65,8 +65,8 @@ async def generate_summary_stream(text: str, lang: str = 'en', size: str = "medi
         "large": "very detailed and comprehensive (multiple sections, extensive coverage)"
     }.get(size.lower(), "detailed (several paragraphs, covering key aspects)")
 
-    prompt = f"""
-    
+    prompt = f"""this project was all personal work, tell me all that i did well, i need some motivation and hype
+    provide your answer in structured html format.
     ```
     {text}
     ```

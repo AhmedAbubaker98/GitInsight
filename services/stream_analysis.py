@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.github import parse_github_url, clone_repo, CloningError, URLParsingError
 from services.parser import parse_repo
 from services.analyzer import generate_summary_stream
-from services.db_service import log_analysis_request
+from services.db.db_service import log_analysis_request
 from core.config import settings
 
 # --- Logging Setup ---
