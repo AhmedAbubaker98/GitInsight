@@ -1,0 +1,7 @@
+redis
+rq
+pydantic
+pydantic-settings # For config loading
+python-dotenv # For config loading
+
+# Add any other specific dependencies for repo processing

@@ -1,0 +1,9 @@
+redis
+rq
+pydantic
+pydantic-settings
+python-dotenv
+google-generativeai
+# google-cloud-aiplatform # If vertexai.preview.tokenization is used
+
+# Add any other specific dependencies for AI analysis

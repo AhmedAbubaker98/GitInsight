@@ -1,0 +1,79 @@
+services:
+  api_service:
+    build: ./api_service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api_service:/app # For development; remove for production image build
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+    # The start.sh script inside api_service/Dockerfile will run Uvicorn and the RQ worker
+
+  repo_processor_worker:
+    build: ./repo_processor_service
+    command: rq worker -u redis://redis:6379 gitinsight_repo_processing # Listen to specific queue
+    volumes:
+      - ./repo_processor_service:/app # For development
+      - /tmp/gitinsight_clones:/tmp/gitinsight_clones # Volume for cloned repos (optional, but good for inspection/persistence)
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db # Though not directly using, good to ensure DB is up if it were to make direct calls
+    networks:
+      - app-network
+    deploy: # Example for scaling workers
+      replicas: 1 # Start with 2 workers, can be scaled
+
+  ai_analyzer_worker:
+    build: ./ai_analyzer_service
+    command: rq worker -u redis://redis:6379 gitinsight_ai_analysis # Listen to specific queue
+    volumes:
+      - ./ai_analyzer_service:/app # For development
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    deploy: # Example for scaling workers
+      replicas: 1 # Start with 2 workers, can be scaled
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

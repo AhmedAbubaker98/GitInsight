@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+*.db
+*.sqlite3
+.git
+.gitignore
+*.log
+# Temp clone directories if created locally (though service cleans up)
+gitinsight_repo_*

@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard] # Includes websockets and http-tools
+pydantic
+pydantic-settings
+sqlalchemy
+asyncpg
+authlib
+httpx # For OAuth client
+jinja2
+python-dotenv
+redis # For RQ connection
+rq # For RQ Queue and Worker (worker part run by start.sh)

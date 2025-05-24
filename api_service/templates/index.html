@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - GitInsight Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitInsight Repository Analyzer</h1>
+        </header>
+        
+        <main class="auth-options">
+            <p>Analyze GitHub repositories to get AI-powered summaries.</p>
+            
+            {% if request.query_params.get("error") %}<!-- Check for error in query params -->
+                <div class="error-message">
+                    Error: {{ request.query_params.get("error") }}
+                </div>
+            {% endif %}<!-- End error check -->
+
+            {% if github_enabled %}<!-- Check if GitHub OAuth is enabled -->
+                <div class="auth-box">
+                    <h2>Login with GitHub</h2>
+                    <p>Login to save your analysis history and analyze private repositories (if you grant access).</p>
+                    <a href="{{ url_for('login_with_github') }}" class="button github-login">Login with GitHub</a>
+                </div>
+            {% else %}<!-- GitHub OAuth is not enabled -->
+                <div class="auth-box info-message">
+                    <h2>GitHub Login Not Available</h2>
+                    <p>GitHub login is currently not configured. You can proceed as a guest.</p>
+                </div>
+            {% endif %}<!-- End github_enabled check -->
+            
+            <div class="auth-box">
+                <h2>Continue as Guest</h2>
+                <p>Analyze public repositories without logging in. History will not be saved.</p>
+                <a href="{{ url_for('route_guest_mode') }}" class="button guest-login">Continue as Guest</a>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2024 GitInsight Analyzer</p>
+        </footer>
+    </div>
+</body>
+</html>
