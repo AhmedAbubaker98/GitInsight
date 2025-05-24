@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = "gitinsight_db"
     DATABASE_HOST: str = "db"
-    DATABASE_PORT: str = "5432"
+    DATABASE_PORT: str = "5432" # Keep as string if PostgresDsn.build handles it, but int is safer for Pydantic fields
     MY_DATABASE_URL: Optional[PostgresDsn] = None
 
     @validator("MY_DATABASE_URL", pre=True, always=True)
@@ -26,23 +26,25 @@ class Settings(BaseSettings):
             username=values.get("POSTGRES_USER"),
             password=values.get("POSTGRES_PASSWORD"),
             host=values.get("DATABASE_HOST"),
-            port=values.get("DATABASE_PORT"),
+            port=str(values.get("DATABASE_PORT")), # Ensure port is string for PostgresDsn.build if it expects string
             path=f"/{values.get('POSTGRES_DB') or ''}",
         )
 
     # Redis
     REDIS_HOST: str = "redis"
-    REDIS_PORT: str = "6379"
+    REDIS_PORT: int = 6379  # Changed from str to int, and default value to int
     REDIS_URL: Optional[RedisDsn] = None
 
     @validator("REDIS_URL", pre=True, always=True)
     def assemble_redis_connection(cls, v: Optional[str], values: dict[str, Any]) -> Any:
         if isinstance(v, str):
             return v
+        # Pydantic will have already ensured REDIS_PORT is an int if loaded from env var
+        # or it's already an int from the default value.
         return RedisDsn.build(
             scheme="redis",
             host=values.get("REDIS_HOST"),
-            port=values.get("REDIS_PORT"),
+            port=values.get("REDIS_PORT"), # This will now be an integer
             path="/0" # Default Redis DB
         )
 
