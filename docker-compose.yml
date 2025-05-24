@@ -4,7 +4,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api_service:/app # For development; remove for production image build
+      - ./api_service:/app/api_service # Adjusted volume mount
     env_file:
       - .env
     depends_on:

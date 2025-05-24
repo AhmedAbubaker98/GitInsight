@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
 
     class Config:
-        env_file = ".env"
+        # env_file = ".env"
         env_file_encoding = 'utf-8'
         # For Docker, env vars might be passed directly, not from .env file
         # So ensure your Docker setup passes these vars or mounts the .env

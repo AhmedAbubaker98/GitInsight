@@ -2,6 +2,7 @@ import logging
 import json
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
+import os
 
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -65,10 +66,12 @@ async def lifespan(app: FastAPI):
         redis_conn.close()
 
 # --- App Setup ---
+APP_DIR = os.path.dirname(os.path.abspath(__file__)) # <--- Add this line (resolves to /app/api_service)
+
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static") # <--- Modified
+templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates")) # <--- Modified
 
 oauth = OAuth()
 if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:

@@ -3,20 +3,21 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
+WORKDIR /app # /app will be in PYTHONPATH and the CWD for CMD
 
 # Install git and other system dependencies
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy all files from the build context (./api_service) into /app/api_service/
+COPY . /app/api_service/
 
-COPY . .
+# Install Python dependencies from the new location of requirements.txt
+RUN pip install --no-cache-dir -r /app/api_service/requirements.txt
 
-# Make start.sh executable
-RUN chmod +x ./start.sh
+# Make start.sh executable (now located at /app/api_service/start.sh)
+RUN chmod +x /app/api_service/start.sh
 
 EXPOSE 8000
 
-# CMD ["uvicorn", "api_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["./start.sh"]
+# Execute start.sh from its new location. The CWD will be /app.
+CMD ["/app/api_service/start.sh"]
