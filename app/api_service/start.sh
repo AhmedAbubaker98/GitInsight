@@ -9,19 +9,18 @@ uvicorn api_service.main:app --host 0.0.0.0 --port 8000 &
 UVICORN_PID=$!
 echo "Uvicorn PID: $UVICORN_PID"
 
-# Start RQ worker for the results queue in the background
-# The worker needs to import api_service.tasks.result_consumer.process_analysis_result
-# Ensure PYTHONPATH is set correctly or modules are importable.
-# RQ worker command needs the python path to the task function.
-# RQ will call the function `api_service.tasks.result_consumer.process_analysis_result`
+# Construct Redis URL if not explicitly set, using defaults common in Docker setups.
+# This prioritizes REDIS_URL, then REDIS_HOST/REDIS_PORT, then common defaults.
+EFFECTIVE_REDIS_URL="${REDIS_URL:-redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/0}"
+
 echo "Starting RQ worker for results queue: ${RESULT_QUEUE:-gitinsight_results}..."
-echo "Redis URL for worker: ${REDIS_URL}"
+echo "Redis URL for worker: ${EFFECTIVE_REDIS_URL}" # Log the URL being used
 
 # Give a moment for Uvicorn to start and potentially log errors
 sleep 2
 
-# Using `python -m rq worker` is often more robust for module discovery
-python -m rq worker -u "${REDIS_URL}" "${RESULT_QUEUE:-gitinsight_results}" &
+# Using `rq worker` directly is standard and avoids the `No module named rq.__main__` error.
+rq worker -u "${EFFECTIVE_REDIS_URL}" "${RESULT_QUEUE:-gitinsight_results}" &
 RQ_WORKER_PID=$!
 echo "RQ Worker PID: $RQ_WORKER_PID"
 
@@ -48,3 +47,4 @@ if ! kill -0 $RQ_WORKER_PID 2>/dev/null; then
 fi
 
 exit 0
+        

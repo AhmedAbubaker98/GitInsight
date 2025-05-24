@@ -10,3 +10,4 @@ jinja2
 python-dotenv
 redis # For RQ connection
 rq # For RQ Queue and Worker (worker part run by start.sh)
+itsdangerous
