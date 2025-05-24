@@ -2,6 +2,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV PYTHONPATH /app 
 
 WORKDIR /app # /app will be in PYTHONPATH and the CWD for CMD
 
@@ -21,3 +22,4 @@ EXPOSE 8000
 
 # Execute start.sh from its new location. The CWD will be /app.
 CMD ["/app/api_service/start.sh"]
+    
