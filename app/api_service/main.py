@@ -3,6 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 import os
+from datetime import datetime
 
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -13,6 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from redis import Redis
 from rq import Queue
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .core.config import settings
 from .services.db.db_service import (
@@ -93,8 +95,8 @@ class AnalyzeRepoRequest(BaseModel):
     lang: str = "en"
     size: str = "medium"
     technicality: str = "technical"
-
 class AnalysisStatusResponse(BaseModel):
+    """Response model for analysis status information."""
     analysis_id: int
     status: AnalysisStatus
     repository_url: str
@@ -102,6 +104,7 @@ class AnalysisStatusResponse(BaseModel):
     summary_content: Optional[str] = None
     error_message: Optional[str] = None
     timestamp: datetime
+    updated_at: datetime
     updated_at: datetime
 
 
