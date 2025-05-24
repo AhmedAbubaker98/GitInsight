@@ -14,12 +14,12 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from redis import Redis
 from rq import Queue
 
-from core.config import settings
-from services.db.db_service import (
+from .core.config import settings
+from .services.db.db_service import (
     init_db, get_db_session, create_analysis_history,
     get_analysis_by_id_for_user, get_analysis_history_for_user, engine as db_engine
 )
-from services.db.db_models import AnalysisHistoryItem, AnalysisHistoryDetail, AnalysisStatus # Pydantic models for response
+from .services.db.db_models import AnalysisHistoryItem, AnalysisHistoryDetail, AnalysisStatus # Pydantic models for response
 
 # --- Logging Setup ---
 logging.basicConfig(
