@@ -13,8 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# The command to run the worker is specified in docker-compose.yml
-# If running directly, it would be:
-# CMD ["python", "-m", "rq", "worker", "-u", "$REDIS_URL", "gitinsight_repo_processing"]
-# Or:
-CMD ["python", "repo_processor_service/main.py"]
+# Change this line:
+# FROM: CMD ["python", "repo_processor_service/main.py"]
+# TO:
+CMD ["python", "-m", "repo_processor_service.main"]

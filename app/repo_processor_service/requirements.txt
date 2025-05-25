@@ -3,5 +3,5 @@ rq
 pydantic
 pydantic-settings # For config loading
 python-dotenv # For config loading
-
+GitPython
 # Add any other specific dependencies for repo processing
