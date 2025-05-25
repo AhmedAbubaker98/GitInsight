@@ -18,9 +18,9 @@ class AIGenerationError(AISummaryError): pass
 
 # Configure GenAI client (done once when module is loaded)
 try:
-    if not settings.MY_GOOGLE_API_KEY:
-        raise AIInitializationError("MY_GOOGLE_API_KEY not set in AI Analyzer service.")
-    genai.configure(api_key=settings.MY_GOOGLE_API_KEY)
+    if not settings.AI_ANALYZER_MY_GOOGLE_API_KEY:
+        raise AIInitializationError("AI_ANALYZER_MY_GOOGLE_API_KEY not set in AI Analyzer service.")
+    genai.configure(api_key=settings.AI_ANALYZER_MY_GOOGLE_API_KEY)
     model = genai.GenerativeModel(settings.AI_MODEL_NAME)
     # Tokenizer can be implicitly handled by model.count_tokens or explicitly:
     # tokenizer = tokenization.get_tokenizer_for_model(settings.AI_TOKENIZER_MODEL) # If using Vertex

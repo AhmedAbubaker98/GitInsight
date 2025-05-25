@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- MODIFIED TITLE from second code -->
     <title>GitInsight - Analyze Repository</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
-    <!-- CSS from SECOND CODE - ideally move this to your style.css -->
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -24,25 +22,24 @@
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
             border-radius: 8px;
         }
-        /* Styles from second code */
         .app-header {
             background-color: #f8f9fa;
-            padding: 15px 0; /* Increased padding */
+            padding: 15px 0;
             border-bottom: 1px solid #dee2e6;
-            margin-bottom: 20px; /* Add margin below header */
+            margin-bottom: 20px;
         }
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1000px; /* Match container */
-            margin: 0 auto;    /* Center content */
-            padding: 0 20px;  /* Add padding if container is wider */
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
         .logo {
-            font-size: 1.8em; /* Slightly larger logo */
+            font-size: 1.8em;
             font-weight: bold;
-            color: #0056b3; /* A distinct color */
+            color: #0056b3;
         }
         .user-info span, .user-info a, .user-info button {
             margin-left: 10px;
@@ -67,20 +64,17 @@
         .user-info a:hover {
             text-decoration: underline;
         }
-
-
         .tabs { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 20px; }
         .tab-button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 1rem; }
         .tab-button:hover { background-color: #f0f0f0; }
         .tab-button.active { background-color: #e0e0e0; font-weight: bold; border-bottom: 2px solid #007bff; }
-        .tab-content { display: none; padding-top: 10px; animation: fadeIn 0.5s; } /* Added fade-in */
+        .tab-content { display: none; padding-top: 10px; animation: fadeIn 0.5s; }
 
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
 
-        /* Styling for history items from second code, adapted for existing IDs */
         #historyList { list-style-type: none; padding: 0; }
         #historyList li { padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.2s; }
         #historyList li:hover { background-color: #f9f9f9; }
@@ -88,29 +82,27 @@
         #historyList li .params, #historyList li .timestamp { font-size: 0.85em; color: #555; display: block; margin-bottom: 2px; }
 
         #historyDetail {
-            padding: 20px; /* Increased padding */
+            padding: 20px;
             border: 1px solid #e0e0e0;
-            border-radius: 8px; /* More rounded corners */
+            border-radius: 8px;
             background-color: #f9f9f9;
-            margin-top: 20px; /* Space above detail view */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Subtle shadow */
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         #historyDetail h3 {
             margin-top: 0;
             color: #0056b3;
         }
-        .summary-content-box { /* Style for the actual summary text */
+        .summary-content-box {
             background-color: #ffffff;
             padding: 15px;
             border-radius: 5px;
             border: 1px solid #ddd;
             margin-top: 10px;
-            white-space: pre-wrap; /* Preserve whitespace and newlines in summary */
-            max-height: 400px; /* Limit height and make scrollable if needed */
+            white-space: pre-wrap;
+            max-height: 400px;
             overflow-y: auto;
         }
-
-        /* General form styling improvements (can be in your main style.css) */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
         .form-group input[type="text"], .form-group select {
@@ -137,8 +129,6 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
-
-        /* Progress and error styling */
         #progressArea {
             margin-top: 15px;
             padding: 10px;
@@ -159,7 +149,7 @@
             background-color: #fdfdfd;
             border: 1px solid #eee;
             border-radius: 4px;
-            white-space: pre-wrap; /* Important for formatted AI output */
+            white-space: pre-wrap;
         }
         footer {
             text-align: center;
@@ -172,7 +162,6 @@
     </style>
 </head>
 <body>
-    <!-- NEW HEADER STRUCTURE from second code -->
     <header class="app-header">
         <div class="header-content">
             <div class="logo">GitInsight</div>
@@ -191,7 +180,6 @@
     </header>
 
     <div class="container">
-        <!-- TABS NAVIGATION from second code -->
         <div class="tabs">
             <button class="tab-button active" onclick="openTab(event, 'analysis-tab')">Analyze</button>
             {% if user and not is_guest and db_enabled %}
@@ -199,14 +187,12 @@
             {% endif %}
         </div>
 
-        <!-- ANALYSIS TAB CONTENT -->
         <div id="analysis-tab" class="tab-content" style="display: block;">
             <h2>Analyze a GitHub Repository</h2>
             {% if is_guest %}
                 <p><em>You are in Guest Mode. Only public repositories can be analyzed. Login with GitHub to analyze private repositories and view history.</em></p>
             {% endif %}
 
-            <!-- section id="analysis-form-section" from FIRST code, placed inside tab -->
             <section id="analysis-form-section">
                 <form id="analysisForm">
                     <div class="form-group">
@@ -215,19 +201,18 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="lang">Summary Language:</label> <!-- Label from second code -->
-                        <select id="lang" name="lang"> <!-- ID and name from first code -->
+                        <label for="lang">Summary Language:</label>
+                        <select id="lang" name="lang">
                             <option value="en" selected>English</option>
                             <option value="es">Spanish</option>
                             <option value="fr">French</option>
                             <option value="de">German</option>
-                            <!-- Add more languages as supported by your AI prompt -->
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="size">Summary Length:</label> <!-- Label from second code -->
-                        <select id="size" name="size"> <!-- ID and name from first code -->
+                        <label for="size">Summary Length:</label>
+                        <select id="size" name="size">
                             <option value="small">Small</option>
                             <option value="medium" selected>Medium</option>
                             <option value="large">Large</option>
@@ -235,11 +220,11 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="technicality">Technical Level:</label> <!-- Label from second code -->
-                        <select id="technicality" name="technicality"> <!-- ID and name from first code -->
-                            <option value="beginner">Non-Technical</option> <!-- Option text from second code -->
-                            <option value="intermediate">Technical</option> <!-- Option text from second code -->
-                            <option value="technical" selected>Expert</option> <!-- Option text from second code -->
+                        <label for="technicality">Technical Level:</label>
+                        <select id="technicality" name="technicality">
+                            <option value="beginner">Non-Technical</option>
+                            <option value="intermediate">Technical</option>
+                            <option value="technical" selected>Expert</option>
                         </select>
                     </div>
                     
@@ -247,35 +232,31 @@
                 </form>
             </section>
 
-            <!-- section id="results-section" from FIRST code, placed inside tab -->
             <section id="results-section">
                 <h2>Analysis Results</h2>
                 <div id="progressArea">Enter a repository URL and click "Analyze" to see progress here.</div>
-                <div id="summaryOutput"><!-- Summary will be injected here --></div>
+                <div id="summaryOutput"></div>
                 <div id="errorArea" class="error-message" style="display:none;"></div>
             </section>
         </div>
 
-        <!-- HISTORY TAB CONTENT -->
         {% if user and not is_guest and db_enabled %}
         <div id="history-tab" class="tab-content">
             <h2>Analysis History</h2>
-            <!-- section id="history-section" from FIRST code, placed inside tab -->
             <section id="history-section">
                 <button id="loadHistoryButton">Load History</button>
-                <ul id="historyList"><!-- History items will be listed here --></ul>
-                <div id="historyDetail"><!-- Selected history item detail --></div>
+                <ul id="historyList"></ul>
+                <div id="historyDetail"></div>
             </section>
         </div>
         {% endif %}
         
-        <footer class="app-footer"> <!-- Matched class for consistency if styling -->
+        <footer class="app-footer">
             <p>© 2024 GitInsight Analyzer</p>
         </footer>
     </div>
 
     <script>
-        // JAVASCRIPT FOR TABS
         function openTab(evt, tabName) {
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
@@ -287,9 +268,9 @@
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
             document.getElementById(tabName).style.display = "block";
-            if (evt) { // Check if evt is passed (might not be on initial load)
+            if (evt) {
                 evt.currentTarget.className += " active";
-            } else { // For initial load, find the button for the tabName and activate it
+            } else {
                 const buttons = document.querySelectorAll('.tab-button');
                 buttons.forEach(button => {
                     if (button.getAttribute('onclick').includes(tabName)) {
@@ -299,16 +280,13 @@
             }
         }
 
-        // Open the first tab by default on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if there's an active tab button, if not, click the first one if it exists
             const firstTabButton = document.querySelector('.tab-button');
             if (firstTabButton && !document.querySelector('.tab-button.active')) {
-                 openTab(null, 'analysis-tab'); // Pass null for event
+                 openTab(null, 'analysis-tab');
             }
         });
 
-        // ORIGINAL JAVASCRIPT from FIRST code
         const analysisForm = document.getElementById('analysisForm');
         const repoUrlInput = document.getElementById('repoUrl');
         const langSelect = document.getElementById('lang');
@@ -319,9 +297,52 @@
         const summaryOutput = document.getElementById('summaryOutput');
         const errorArea = document.getElementById('errorArea');
 
-        if (analysisForm) { // Ensure form exists before adding listener
+        let pollingIntervalId = null; // To store the interval ID for polling
+
+        // Function to stop polling
+        function stopPolling() {
+            if (pollingIntervalId) {
+                clearInterval(pollingIntervalId);
+                pollingIntervalId = null;
+            }
+            analyzeButton.disabled = false;
+        }
+        
+        // Function to update progress area and handle final states
+        function updateProgress(statusData, analysisId) {
+            console.log("Poll status:", statusData);
+            // Clear previous messages or only show the latest for simplicity
+            let progressHTML = `<p>Analysis ID: ${analysisId}</p>`;
+            progressHTML += `<p>Status: <strong>${statusData.status}</strong></p>`;
+            
+            // Add message from status if available (e.g., "Cloning repository...", "Parsing files...")
+            // This assumes your /analysis/status endpoint might return a 'message' field for ongoing steps
+            if (statusData.message) { 
+                progressHTML += `<p>Details: ${statusData.message}</p>`;
+            }
+            progressArea.innerHTML = progressHTML;
+
+            if (statusData.status === 'completed') {
+                summaryOutput.innerHTML = `<div class="summary-content-box">${statusData.summary_content || "Summary not available."}</div>`;
+                progressArea.innerHTML += '<p class="success">Analysis Complete!</p>';
+                stopPolling();
+            } else if (statusData.status === 'failed') {
+                summaryOutput.innerHTML = ''; // Clear any partial summary
+                const errorMessage = statusData.error_message || 'Analysis failed due to an unknown error.';
+                errorArea.textContent = errorMessage;
+                errorArea.style.display = 'block';
+                progressArea.innerHTML += `<p class="error">Analysis Failed: ${errorMessage}</p>`;
+                stopPolling();
+            }
+        }
+
+
+        if (analysisForm) {
             analysisForm.addEventListener('submit', async function(event) {
                 event.preventDefault();
+
+                // Clear previous results and stop any ongoing polling
+                stopPolling(); 
                 summaryOutput.innerHTML = '';
                 progressArea.innerHTML = 'Starting analysis...';
                 errorArea.style.display = 'none';
@@ -336,77 +357,76 @@
                 };
 
                 try {
-                    const response = await fetch("{{ url_for('analyze_repo_endpoint') }}", {
+                    const initialResponse = await fetch("{{ url_for('analyze_repo_endpoint') }}", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Accept': 'application/x-ndjson'
+                            // 'Accept': 'application/json' // No longer expecting NDJSON from this initial call
                         },
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) {
-                        let errorMsg = `HTTP error! Status: ${response.status}`;
+                    if (!initialResponse.ok) {
+                        let errorMsg = `HTTP error! Status: ${initialResponse.status}`;
                         try {
-                            const errData = await response.json();
+                            const errData = await initialResponse.json();
                             errorMsg = errData.detail || errData.error || errorMsg;
                         } catch (e) { /* ignore if response not json */ }
                         throw new Error(errorMsg);
                     }
 
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let finalSummaryHtml = "";
+                    const initialData = await initialResponse.json();
+                    const analysisId = initialData.analysis_id;
 
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (done) break;
-                        
-                        const chunk = decoder.decode(value, { stream: true });
-                        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-                        for (const line of lines) {
-                            try {
-                                const data = JSON.parse(line);
-                                console.log("Received data:", data);
-                                
-                                if (data.error) {
-                                    progressArea.innerHTML += `<p class="error">Error (${data.component || 'system'}): ${data.error}</p>`;
-                                    errorArea.textContent = `Error from ${data.component || 'system'}: ${data.error}`;
-                                    errorArea.style.display = 'block';
-                                } else if (data.status) {
-                                    progressArea.innerHTML += '<p>' + (data.component || 'System') + ': ' + data.status + '</p>';
-                                } else if (data.summary_chunk) {
-                                    finalSummaryHtml += data.summary_chunk;
-                                    summaryOutput.innerHTML = finalSummaryHtml; // Live update
-                                } else if (data.summary) {
-                                    finalSummaryHtml = data.summary;
-                                    summaryOutput.innerHTML = finalSummaryHtml;
-                                    progressArea.innerHTML += '<p class="success">AI Summary Complete!</p>';
-                                }
-                                
-                                if (data.final_summary_available) {
-                                    progressArea.innerHTML += '<p class="success">Analysis Complete!</p>';
-                                }
-                            } catch (e) {
-                                console.warn("Failed to parse JSON line from stream:", line, e);
-                                progressArea.innerHTML += '<p class="warning">Received non-JSON progress update.</p>';
-                            }
-                        }
+                    if (!analysisId) {
+                        throw new Error("Failed to get Analysis ID from the server.");
                     }
+                    
+                    // Update UI with initial queued status
+                    progressArea.innerHTML = `<p>Analysis Queued (ID: ${analysisId}). Waiting for updates...</p>`;
+                    if(initialData.status) { // The initial response also has a status
+                         updateProgress(initialData, analysisId);
+                    }
+
+
+                    // Start polling for status
+                    const pollFrequency = 3000; // Poll every 3 seconds
+                    pollingIntervalId = setInterval(async () => {
+                        try {
+                            const statusFetchResponse = await fetch(`{{ url_for('get_analysis_status_endpoint', analysis_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', analysisId));
+                            
+                            if (!statusFetchResponse.ok) {
+                                // Log error but continue polling for a bit unless it's a 404
+                                console.error("Polling error:", statusFetchResponse.status);
+                                progressArea.innerHTML += `<p class="warning">Status check failed: ${statusFetchResponse.status}. Retrying...</p>`;
+                                if (statusFetchResponse.status === 404) {
+                                     errorArea.textContent = `Analysis ID ${analysisId} not found.`;
+                                     errorArea.style.display = 'block';
+                                     stopPolling(); // Stop if analysis ID is definitively not found
+                                }
+                                return;
+                            }
+                            const statusData = await statusFetchResponse.json();
+                            updateProgress(statusData, analysisId); // updateProgress will handle stopping polling
+
+                        } catch (pollError) {
+                            console.error('Polling request failed:', pollError);
+                            progressArea.innerHTML += `<p class="error">Error during status check: ${pollError.message}. Retrying...</p>`;
+                            // Don't stop polling for network errors, let it retry.
+                        }
+                    }, pollFrequency);
+
                 } catch (error) {
-                    console.error('Analysis request failed:', error);
+                    console.error('Analysis submission failed:', error);
                     progressArea.innerHTML = `<p class="error">Request failed: ${error.message}</p>`;
-                    errorArea.textContent = `Request failed: ${error.message}`;
+                    errorArea.textContent = `Analysis submission failed: ${error.message}`;
                     errorArea.style.display = 'block';
-                } finally {
-                    analyzeButton.disabled = false;
+                    analyzeButton.disabled = false; // Re-enable button if initial submission fails
                 }
             });
         }
 
-
-        // History section JS - check if elements exist before adding event listeners
+        // History section JS
         const loadHistoryButton = document.getElementById('loadHistoryButton');
         const historyList = document.getElementById('historyList');
         const historyDetail = document.getElementById('historyDetail');
@@ -422,16 +442,15 @@
                         throw new Error(errData.detail || 'Failed to load history');
                     }
                     const historyItems = await response.json();
-                    historyList.innerHTML = ''; // Clear loading message
+                    historyList.innerHTML = '';
                     if (historyItems.length === 0) {
                         historyList.innerHTML = '<li>No history found.</li>';
                     } else {
                         historyItems.forEach(item => {
                             const li = document.createElement('li');
-                            li.dataset.historyId = item.id; // Set data attribute on li for click
+                            li.dataset.historyId = item.id;
                             li.addEventListener('click', loadHistoryDetail);
 
-                            // Use classes from second code's CSS for styling
                             const repoUrlSpan = document.createElement('span');
                             repoUrlSpan.className = 'repo-url';
                             repoUrlSpan.textContent = item.repository_url;
@@ -439,7 +458,7 @@
 
                             const timestampSpan = document.createElement('span');
                             timestampSpan.className = 'timestamp';
-                            timestampSpan.textContent = `Analyzed: ${new Date(item.timestamp).toLocaleString()}`;
+                            timestampSpan.textContent = `Analyzed: ${new Date(item.timestamp).toLocaleString()} (Status: ${item.status || 'N/A'})`; // Added status to history list
                             li.appendChild(timestampSpan);
                             
                             if (item.parameters_used) {
@@ -458,7 +477,6 @@
             });
 
             async function loadHistoryDetail(event) {
-                // Click might be on a child span, so get historyId from the parent <li>
                 let targetElement = event.target;
                 while (targetElement && !targetElement.dataset.historyId) {
                     targetElement = targetElement.parentElement;
@@ -474,12 +492,22 @@
                         throw new Error(errData.detail || 'Failed to load history item');
                     }
                     const itemDetail = await response.json();
-                    historyDetail.innerHTML = `
+                     // Display the summary in its own box, and error if present
+                    let detailHTML = `
                         <h3>Details for: ${itemDetail.repository_url}</h3>
+                        <p><strong>Status:</strong> ${itemDetail.status}</p>
                         <p><strong>Analyzed on:</strong> ${new Date(itemDetail.timestamp).toLocaleString()}</p>
                         <p><strong>Parameters:</strong> Lang: ${itemDetail.parameters_used.lang}, Size: ${itemDetail.parameters_used.size}, Tech: ${itemDetail.parameters_used.technicality}</p>
-                        <div class="summary-content-box">${itemDetail.summary_content}</div>
                     `;
+                    if (itemDetail.status === 'completed' && itemDetail.summary_content) {
+                        detailHTML += `<h4>Summary:</h4><div class="summary-content-box">${itemDetail.summary_content}</div>`;
+                    } else if (itemDetail.status === 'failed' && itemDetail.error_message) {
+                        detailHTML += `<p class="error"><strong>Error:</strong> ${itemDetail.error_message}</p>`;
+                    } else if (itemDetail.status !== 'completed') {
+                        detailHTML += `<p><em>Analysis is not yet complete or did not produce a summary.</em></p>`;
+                    }
+                    historyDetail.innerHTML = detailHTML;
+
                 } catch (error) {
                     console.error('Failed to load history detail:', error);
                     historyDetail.innerHTML = `<p class="error">Error loading detail: ${error.message}</p>`;

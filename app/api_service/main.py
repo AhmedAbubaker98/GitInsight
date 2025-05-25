@@ -221,16 +221,16 @@ async def analyze_repo_endpoint(
     task_payload = {
         "analysis_id": history_entry.id,
         "repository_url": str(payload.url),
-        "github_token": token, # Can be None for guest
+        "github_token": token,
         "analysis_parameters": analysis_parameters,
-        "result_queue_name": settings.RESULT_QUEUE # Pass the name of the results queue
+        "result_queue_name": settings.RESULT_QUEUE
     }
 
     try:
         repo_processing_q.enqueue(
             "repo_processor_service.tasks.process_repo_task.process_repo_task", # Full path to task function
-            task_payload,
-            job_timeout="10m" # Example timeout
+            job_timeout="10m", # Pass enqueue-specific args first for clarity or if they might conflict with task_payload keys
+            **task_payload      # Unpack the dictionary as keyword arguments for the task
         )
         logger.info(f"Enqueued repo processing task for analysis_id: {history_entry.id}")
     except Exception as e:

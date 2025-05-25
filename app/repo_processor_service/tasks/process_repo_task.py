@@ -69,7 +69,7 @@ def is_likely_binary(file_path: Path) -> bool:
     try:
         with open(file_path, 'rb') as f:
             chunk = f.read(1024) # Read first 1KB
-            return b'\0' in chunk # Null byte is a strong indicator of binary
+            return b'\\0' in chunk # Null byte is a strong indicator of binary
     except OSError:
         return False
 
@@ -135,17 +135,12 @@ def parse_repo_content(repo_path: str) -> Dict[str, Any]: # Renamed for clarity,
 def _send_to_queue(queue_name: str, task_function_path: str, payload: Dict[str, Any], analysis_id: int):
     """Helper to enqueue data to a specified queue."""
     try:
-        # Each task function should manage its own Redis connection context if possible,
-        # or RQ's default connection can be used if Connection(redis_conn) is active in the worker.
-        # For simplicity here, creating a short-lived connection.
         with Redis.from_url(str(rps_settings.REDIS_URL)) as redis_conn:
             q = Queue(queue_name, connection=redis_conn)
             q.enqueue(task_function_path, payload)
             logger.info(f"[Analysis ID: {analysis_id}] Enqueued to '{queue_name}': {task_function_path} with partial payload keys: {list(payload.keys())}")
     except Exception as e:
         logger.error(f"[Analysis ID: {analysis_id}] Failed to enqueue to '{queue_name}': {e}", exc_info=True)
-        # This is a critical failure if we can't report back.
-        # Depending on the error, this might indicate a problem with Redis itself.
 
 def _send_status_update(analysis_id: int, result_queue_name: str, status: str, message: Optional[str] = None, error_message: Optional[str] = None, data: Optional[Dict] = None):
     """Sends a status update or final result to the central result queue."""
@@ -157,11 +152,9 @@ def _send_status_update(analysis_id: int, result_queue_name: str, status: str, m
         payload["message"] = message
     if error_message:
         payload["error_message"] = error_message
-    if data: # For sending final summary_content, etc.
+    if data: 
         payload.update(data)
 
-    # The task consuming this in api_service needs to be defined.
-    # Assuming it's 'api_service.tasks.result_consumer.process_analysis_result'
     _send_to_queue(
         queue_name=result_queue_name,
         task_function_path="api_service.tasks.result_consumer.process_analysis_result",
@@ -172,39 +165,32 @@ def _send_status_update(analysis_id: int, result_queue_name: str, status: str, m
 # --- RQ Task Function ---
 def process_repo_task(analysis_id: int, repository_url: str, github_token: Optional[str],
                       analysis_parameters: Dict[str, Any], result_queue_name: str):
-    """
-    RQ task to clone, parse a repository, and enqueue parsed data for AI analysis.
-    It also sends status updates back to the main result queue.
-    """
     logger.info(f"[Analysis ID: {analysis_id}] Received task for repository: {repository_url}")
 
-    # Define a temporary directory for cloning
-    # CLONE_TEMP_DIR_BASE should be defined in repo_processor_service.core.config.settings
     base_temp_dir = Path(rps_settings.CLONE_TEMP_DIR_BASE)
     temp_clone_dir = base_temp_dir / f"analysis_{analysis_id}_{os.urandom(4).hex()}"
 
     try:
-        # 0. Send "processing_repo" status update
         _send_status_update(
             analysis_id=analysis_id,
             result_queue_name=result_queue_name,
-            status="processing_repo", # Make sure this status string matches your db_models.AnalysisStatus enum
+            status="processing_repo",
             message="Starting repository cloning and parsing."
         )
 
-        # 1. Create temporary directory
         os.makedirs(temp_clone_dir, exist_ok=True)
         logger.info(f"[Analysis ID: {analysis_id}] Created temp directory: {temp_clone_dir}")
 
-        # 2. Clone the repository
         logger.info(f"[Analysis ID: {analysis_id}] Cloning {repository_url} into {temp_clone_dir}...")
         try:
-            # Note: github_token is not directly used by clone_from here.
-            # For private repos via HTTPS, the token would need to be embedded in the URL
-            # or Git credential helper configured. For SSH, SSH keys are needed.
-            # For public repos, it might help with rate limits if used with GitHub API calls,
-            # but not directly with a simple `git clone`.
-            Repo.clone_from(repository_url, str(temp_clone_dir), depth=1) # Shallow clone
+            # Construct clone URL, potentially with token for private HTTPS repos
+            clone_url = repository_url
+            if github_token and repository_url.startswith("https://"):
+                # Basic token injection for HTTPS. More robust solutions might use credential helpers.
+                url_parts = repository_url.split("://")
+                clone_url = f"{url_parts[0]}://oauth2:{github_token}@{url_parts[1]}"
+            
+            Repo.clone_from(clone_url, str(temp_clone_dir), depth=1)
             logger.info(f"[Analysis ID: {analysis_id}] Successfully cloned repository.")
         except GitExceptions.GitCommandError as e:
             logger.error(f"[Analysis ID: {analysis_id}] Failed to clone repository {repository_url}: {e.stderr}", exc_info=True)
@@ -212,26 +198,53 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
                 analysis_id=analysis_id,
                 result_queue_name=result_queue_name,
                 status="failed",
-                error_message=f"Failed to clone repository: {e.stderr[:500]}" # Truncate long errors
+                error_message=f"Failed to clone repository: {e.stderr[:500]}"
             )
-            return # Stop processing
+            return
 
-        # 3. Parse the cloned repository content
         logger.info(f"[Analysis ID: {analysis_id}] Parsing cloned repository at {temp_clone_dir}")
-        parsed_data = parse_repo_content(str(temp_clone_dir))
-        logger.info(f"[Analysis ID: {analysis_id}] Successfully parsed repository content.")
+        parsed_content = parse_repo_content(str(temp_clone_dir)) # Use the local parsing logic
+        
+        # Prepare a concise version of parsed_content for logging if it's too large
+        # For example, log keys and types/lengths of values
+        log_parsed_summary = {
+            "important_files_count": len(parsed_content.get("important", {})),
+            "source_files_count": len(parsed_content.get("source_files", []))
+        }
+        logger.info(f"[Analysis ID: {analysis_id}] Successfully parsed repository content: {log_parsed_summary}")
 
-        # 4. Enqueue the parsed data for AI analysis
-        # The AI_ANALYSIS_QUEUE is defined in this service's settings (rps_settings)
+
+        # Instead of sending full parsed_repo_content, which can be large,
+        # we'll send a more structured and potentially summarized/concatenated text.
+        # For simplicity, let's concatenate important files and a selection of source files.
+        # This part needs to be carefully designed based on AI model input limits.
+
+        extracted_text_parts = []
+        for path, content in parsed_content.get("important", {}).items():
+            extracted_text_parts.append(f"--- File: {path} ---\n{content}\n\n")
+        
+        for file_info in parsed_content.get("source_files", []):
+            extracted_text_parts.append(f"--- File: {file_info['path']} ---\n{file_info['content']}\n\n")
+        
+        final_extracted_text = "".join(extracted_text_parts)
+        
+        # Check size of final_extracted_text. If too large, truncate or summarize further.
+        # This is a placeholder for actual size management.
+        MAX_TEXT_FOR_AI = 500000 # Example: 500k characters
+        if len(final_extracted_text) > MAX_TEXT_FOR_AI:
+            logger.warning(f"[Analysis ID: {analysis_id}] Extracted text is too large ({len(final_extracted_text)} chars), truncating.")
+            final_extracted_text = final_extracted_text[:MAX_TEXT_FOR_AI] + "\n\n--- TRUNCATED DUE TO LENGTH ---"
+
+
         ai_task_payload = {
             "analysis_id": analysis_id,
-            "parsed_repo_content": parsed_data, # This might be large!
+            "extracted_text": final_extracted_text, # Send concatenated text
             "analysis_parameters": analysis_parameters,
-            "result_queue_name": result_queue_name # AI worker needs this for the final result
+            "result_queue_name": result_queue_name
         }
         
-        # Placeholder for the AI analyzer task path. You'll need to create this service and task.
-        ai_task_function_path = "ai_analyzer_service.tasks.ai_task.analyze_content_task"
+        # MODIFIED: Corrected task path for AI analyzer
+        ai_task_function_path = "ai_analyzer_service.tasks.analyze_text_task.analyze_text_task"
         
         _send_to_queue(
             queue_name=rps_settings.AI_ANALYSIS_QUEUE,
@@ -241,14 +254,6 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
         )
         logger.info(f"[Analysis ID: {analysis_id}] Enqueued data for AI analysis to '{rps_settings.AI_ANALYSIS_QUEUE}'.")
         
-        # Optionally, send another status update indicating handoff to AI
-        # _send_status_update(
-        #     analysis_id=analysis_id,
-        #     result_queue_name=result_queue_name,
-        #     status="processing_ai", # Make sure this status string matches your db_models.AnalysisStatus enum
-        #     message="Repository processing complete. Handed off for AI analysis."
-        # )
-
     except Exception as e:
         logger.error(f"[Analysis ID: {analysis_id}] Unhandled error in process_repo_task for {repository_url}: {e}", exc_info=True)
         _send_status_update(
@@ -258,7 +263,6 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
             error_message=f"Internal error during repository processing: {str(e)[:500]}"
         )
     finally:
-        # 5. Clean up the temporary clone directory
         if temp_clone_dir.exists():
             try:
                 shutil.rmtree(temp_clone_dir)
@@ -267,3 +271,4 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
                 logger.error(f"[Analysis ID: {analysis_id}] Error cleaning up temporary directory {temp_clone_dir}: {e_clean}", exc_info=True)
 
     logger.info(f"[Analysis ID: {analysis_id}] Finished task for repository: {repository_url}")
+    

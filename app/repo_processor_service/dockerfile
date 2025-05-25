@@ -2,18 +2,19 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV PYTHONPATH /app 
 
-WORKDIR /app
+WORKDIR /app 
 
 # Install git
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy requirements first for better layer caching
+COPY requirements.txt /app/repo_processor_service/requirements.txt 
+RUN pip install --no-cache-dir -r /app/repo_processor_service/requirements.txt 
 
-COPY . .
+# Copy the rest of the application code
+COPY . /app/repo_processor_service/ 
 
-# Change this line:
-# FROM: CMD ["python", "repo_processor_service/main.py"]
-# TO:
+# CMD is overridden by docker-compose, but set for consistency if run directly
 CMD ["python", "-m", "repo_processor_service.main"]

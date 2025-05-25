@@ -21,8 +21,8 @@ if __name__ == '__main__':
         logger.critical(f"AI Analyzer Service: Could not connect to Redis. Worker cannot start. Error: {e}", exc_info=True)
         exit(1)
     
-    if not settings.MY_GOOGLE_API_KEY:
-        logger.critical("AI Analyzer Service: MY_GOOGLE_API_KEY is not set. AI tasks will fail.")
+    if not settings.AI_ANALYZER_MY_GOOGLE_API_KEY:
+        logger.critical("AI Analyzer Service: AI_ANALYZER_MY_GOOGLE_API_KEY is not set. AI tasks will fail.")
         # Decide if worker should start or exit. For now, let it start but tasks will fail.
         # exit(1) 
 

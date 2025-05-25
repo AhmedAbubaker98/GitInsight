@@ -85,7 +85,7 @@ class Settings(BaseSettings):
         )
 
     LOG_LEVEL: str = "INFO"
-    RATE_LIMIT_GUEST: str = "5/minute"
+    RATE_LIMIT_GUEST: str = "1/minute"
     RATE_LIMIT_USER: str = "30/minute"
 
     REPO_PROCESSING_QUEUE: str = "gitinsight_repo_processing"

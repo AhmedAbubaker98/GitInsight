@@ -1,17 +1,22 @@
+
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV PYTHONPATH /app 
 
-WORKDIR /app
+WORKDIR /app 
 
 # No git needed for this service if it only receives text
 # RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy requirements first
+COPY requirements.txt /app/ai_analyzer_service/requirements.txt 
+RUN pip install --no-cache-dir -r /app/ai_analyzer_service/requirements.txt 
 
-COPY . .
+# Copy the rest of the application code
+COPY . /app/ai_analyzer_service/ 
 
-# CMD ["python", "-m", "rq", "worker", "-u", "$REDIS_URL", "gitinsight_ai_analysis"]
-CMD ["python", "ai_analyzer_service/main.py"]
+# CMD is overridden by docker-compose, but set for consistency
+CMD ["python", "-m", "ai_analyzer_service.main"]
+    

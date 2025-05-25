@@ -7,6 +7,8 @@ services:
       - ./api_service:/app/api_service # Adjusted volume mount
     env_file:
       - .env
+    environment: # Ensure PYTHONPATH is effective for the command
+      - PYTHONPATH=/app
     depends_on:
       db:
         condition: service_healthy
@@ -14,37 +16,40 @@ services:
         condition: service_started
     networks:
       - app-network
-    # The start.sh script inside api_service/Dockerfile will run Uvicorn and the RQ worker
 
   repo_processor_worker:
     build: ./repo_processor_service
     command: rq worker -u redis://redis:6379 gitinsight_repo_processing # Listen to specific queue
     volumes:
-      - ./repo_processor_service:/app # For development
-      - /tmp/gitinsight_clones:/tmp/gitinsight_clones # Volume for cloned repos (optional, but good for inspection/persistence)
+      - ./repo_processor_service:/app/repo_processor_service # MODIFIED: Path changed
+      - /tmp/gitinsight_clones:/tmp/gitinsight_clones
     env_file:
       - .env
+    environment: # ADDED: Ensure PYTHONPATH for the worker command
+      - PYTHONPATH=/app
     depends_on:
       - redis
-      - db # Though not directly using, good to ensure DB is up if it were to make direct calls
+      - db
     networks:
       - app-network
-    deploy: # Example for scaling workers
-      replicas: 1 # Start with 2 workers, can be scaled
+    deploy:
+      replicas: 1
 
   ai_analyzer_worker:
     build: ./ai_analyzer_service
     command: rq worker -u redis://redis:6379 gitinsight_ai_analysis # Listen to specific queue
     volumes:
-      - ./ai_analyzer_service:/app # For development
+      - ./ai_analyzer_service:/app/ai_analyzer_service # MODIFIED: Path changed
     env_file:
       - .env
+    environment: # ADDED: Ensure PYTHONPATH for the worker command
+      - PYTHONPATH=/app
     depends_on:
       - redis
     networks:
       - app-network
-    deploy: # Example for scaling workers
-      replicas: 1 # Start with 2 workers, can be scaled
+    deploy:
+      replicas: 1
 
   db:
     image: postgres:15-alpine
