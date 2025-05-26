@@ -1,7 +1,7 @@
 redis
 rq
-pydantic
-pydantic-settings # For config loading
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0 # For config loading
 python-dotenv # For config loading
 GitPython
 # Add any other specific dependencies for repo processing

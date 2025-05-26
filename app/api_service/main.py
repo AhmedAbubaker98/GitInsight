@@ -105,7 +105,10 @@ class AnalysisStatusResponse(BaseModel):
     error_message: Optional[str] = None
     timestamp: datetime
     updated_at: datetime
-    updated_at: datetime
+
+    model_config = {
+        "from_attributes": True
+    }
 
 
 # --- Helper Functions ---
