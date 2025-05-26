@@ -1,7 +1,7 @@
 import os
 from pydantic_settings import BaseSettings
 from typing import Optional, Any
-from pydantic import PostgresDsn, RedisDsn, validator
+from pydantic import PostgresDsn, RedisDsn, field_validator, ValidationInfo
 import logging # Import logging
 
 # It's better to use logging than print for production/containerized apps
@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     DATABASE_PORT: str = "5432"
     MY_DATABASE_URL: Optional[PostgresDsn] = None
 
-    @validator("MY_DATABASE_URL", pre=True, always=True)
-    def assemble_db_connection(cls, v: Optional[str], values: dict[str, Any]) -> Any:
+    @field_validator("MY_DATABASE_URL", mode='before')
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> Any:
+        values = info.data
         final_url_str: Optional[str] = None
         db_host_for_assembly: str = values.get("DATABASE_HOST", "db")
 
@@ -60,15 +62,15 @@ class Settings(BaseSettings):
             logger.error("Failed to determine a valid database URL.")
             raise ValueError("Database URL could not be determined.")
             
-        return final_url_str # Return as string, Pydantic will validate it against PostgresDsn type
-
-    # Redis
+        return final_url_str # Return as string, Pydantic will validate it against PostgresDsn type    # Redis
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_URL: Optional[RedisDsn] = None
 
-    @validator("REDIS_URL", pre=True, always=True)
-    def assemble_redis_connection(cls, v: Optional[str], values: dict[str, Any]) -> Any:
+    @field_validator("REDIS_URL", mode='before')
+    @classmethod
+    def assemble_redis_connection(cls, v: Optional[str], info: ValidationInfo) -> Any:
+        values = info.data
         if isinstance(v, str):
             # logger.info(f"Redis URL is from environment: '{v}'") # Optional: log if needed
             return v
@@ -93,7 +95,7 @@ class Settings(BaseSettings):
     RESULT_QUEUE: str = "gitinsight_results"
 
     class Config:
-        env_file = ".env" # This line indicates Pydantic will try to load from .env
+        env_file = ".env"
         env_file_encoding = 'utf-8'
 
 settings = Settings()
