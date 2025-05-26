@@ -82,7 +82,28 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
             redis_conn.close()
 
 def analyze_text_task(task_payload: dict):
-    """Synchronous RQ task entry point."""
+    """
+    Synchronous RQ task entry point for text analysis.
+
+    This function serves as a wrapper that allows asynchronous text analysis code to be
+    executed within Redis Queue (RQ) workers, which operate in a synchronous context.
+    It uses asyncio.run() to bridge the sync/async gap.
+
+    Args:
+        task_payload (dict): Dictionary containing task parameters including:
+            - analysis_id: Unique identifier for the analysis task
+            - Additional parameters required for text analysis
+
+    Raises:
+        Exception: Re-raises any exceptions that occur during task execution to
+                  ensure RQ properly marks the job as failed. Logs critical errors
+                  before re-raising.
+
+    Note:
+        This is a common pattern for running async code from sync RQ tasks in Python 3.7+.
+        Robust production systems should implement dead-letter queues or more
+        sophisticated error reporting mechanisms for handling connection errors.
+    """
     import asyncio
     # This is a common way to run async code from a sync RQ task
     # Python 3.7+
