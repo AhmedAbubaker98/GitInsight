@@ -70,7 +70,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     AI_ANALYSIS_QUEUE: str = "gitinsight_ai_analysis"
     RESULT_QUEUE: str = "gitinsight_results"    
-    AI_MODEL_NAME: str = "gemini-1.5-flash-latest"
+    # AI_MODEL_NAME: str = "gemini-1.5-flash-latest"
+    AI_MODEL_NAME: str = "gemini-2.5-pro-preview-05-06" #preview models are NOT production ready
     AI_TOKENIZER_MODEL: str = "gemini-1.5-flash-latest"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
