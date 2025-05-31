@@ -1,7 +1,6 @@
-# This is a copy/adaptation of the original services/analyzer.py
 import logging
 import asyncio
-from typing import AsyncGenerator, Union # Union for Python < 3.10, use | for >= 3.10
+from typing import AsyncGenerator, Union 
 
 import google.generativeai as genai
 # from vertexai.preview import tokenization # Using genai's count_tokens for simplicity now
