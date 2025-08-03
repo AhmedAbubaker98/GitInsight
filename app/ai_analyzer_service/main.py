@@ -1,6 +1,6 @@
 import logging
 from redis import Redis
-from rq import Worker, Connection
+from rq import Worker
 
 from ai_analyzer_service.core.config import settings
 
@@ -23,12 +23,9 @@ if __name__ == '__main__':
     
     if not settings.AI_ANALYZER_MY_GOOGLE_API_KEY:
         logger.critical("AI Analyzer Service: AI_ANALYZER_MY_GOOGLE_API_KEY is not set. AI tasks will fail.")
-        # Decide if worker should start or exit. For now, let it start but tasks will fail.
-        # exit(1) 
+        exit(1)
 
-
-    with Connection(redis_conn):
-        # The worker needs to be able to import ai_analyzer_service.tasks.analyze_text_task
-        worker = Worker(listen_queues)
-        logger.info(f"AI Analyzer Service: Worker starting, listening on queues: {', '.join(listen_queues)}")
-        worker.work(with_scheduler=False)
+    # Create worker without deprecated Connection context manager
+    worker = Worker(listen_queues, connection=redis_conn)
+    logger.info(f"AI Analyzer Service: Worker starting, listening on queues: {', '.join(listen_queues)}")
+    worker.work(with_scheduler=False)

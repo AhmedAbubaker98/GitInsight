@@ -43,9 +43,9 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
         # Notify API service that AI processing has started
         result_q.enqueue(
             "api_service.tasks.result_consumer.process_analysis_result",
-            {"analysis_id": analysis_id, "status": "processing_ai"}
+            {"analysis_id": analysis_id, "status": "PROCESSING"}
         )
-        logger.info(f"AI Analyzer: Sent 'processing_ai' status for analysis_id: {analysis_id}")
+        logger.info(f"AI Analyzer: Sent 'PROCESSING' status for analysis_id: {analysis_id}")
 
         summary_content = await generate_summary(
             text=extracted_text,
@@ -57,7 +57,7 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
         logger.info(f"AI Analyzer: Successfully generated summary for analysis_id: {analysis_id}")
         result_q.enqueue(
             "api_service.tasks.result_consumer.process_analysis_result",
-            {"analysis_id": analysis_id, "status": "completed", "summary_content": summary_content}
+            {"analysis_id": analysis_id, "status": "COMPLETED", "summary_content": summary_content}
         )
 
     except (AISummaryError, ValueError, AIInitializationError) as e: # Known, somewhat expected errors
@@ -66,7 +66,7 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
             result_q = Queue(result_queue_name, connection=redis_conn)
             result_q.enqueue(
                 "api_service.tasks.result_consumer.process_analysis_result",
-                {"analysis_id": analysis_id, "status": "failed", "error_message": str(e)}
+                {"analysis_id": analysis_id, "status": "FAILED", "error_message": str(e)}
             )
     except Exception as e:
         logger.critical(f"AI Analyzer: Unexpected critical error for analysis_id {analysis_id}: {e}", exc_info=True)
@@ -74,7 +74,7 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
             result_q = Queue(result_queue_name, connection=redis_conn)
             result_q.enqueue(
                 "api_service.tasks.result_consumer.process_analysis_result",
-                {"analysis_id": analysis_id, "status": "failed", "error_message": f"Unexpected error in AI analysis: {type(e).__name__}"}
+                {"analysis_id": analysis_id, "status": "FAILED", "error_message": f"Unexpected error in AI analysis: {type(e).__name__}"}
             )
         raise # Re-raise for RQ to mark as failed
     finally:

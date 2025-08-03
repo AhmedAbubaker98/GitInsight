@@ -2,83 +2,29 @@ services:
   api_service:
     build: ./api_service
     ports:
-      - "8000:8000"
+      - "0.0.0.0:8000:8000"
     volumes:
-      - ./api_service:/app/api_service # Adjusted volume mount
+      - ./api_service:/app/api_service
     env_file:
       - .env
-    environment: # Ensure PYTHONPATH is effective for the command
+    environment:
       - PYTHONPATH=/app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    networks:
-      - app-network
 
   repo_processor_worker:
     build: ./repo_processor_service
-    command: rq worker -u redis://redis:6379 gitinsight_repo_processing # Listen to specific queue
     volumes:
-      - ./repo_processor_service:/app/repo_processor_service # MODIFIED: Path changed
+      - ./repo_processor_service:/app/repo_processor_service
       - /tmp/gitinsight_clones:/tmp/gitinsight_clones
     env_file:
       - .env
-    environment: # ADDED: Ensure PYTHONPATH for the worker command
+    environment:
       - PYTHONPATH=/app
-    depends_on:
-      - redis
-      - db
-    networks:
-      - app-network
-    deploy:
-      replicas: 1
 
   ai_analyzer_worker:
     build: ./ai_analyzer_service
-    command: rq worker -u redis://redis:6379 gitinsight_ai_analysis # Listen to specific queue
     volumes:
-      - ./ai_analyzer_service:/app/ai_analyzer_service # MODIFIED: Path changed
+      - ./ai_analyzer_service:/app/ai_analyzer_service
     env_file:
       - .env
-    environment: # ADDED: Ensure PYTHONPATH for the worker command
-      - PYTHONPATH=/app
-    depends_on:
-      - redis
-    networks:
-      - app-network
-    deploy:
-      replicas: 1
-
-  db:
-    image: postgres:15-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - app-network
-
-volumes:
-  postgres_data:
-
-networks:
-  app-network:
-    driver: bridge
+      - PYTHONPATH=/app

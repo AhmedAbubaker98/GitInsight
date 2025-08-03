@@ -322,11 +322,11 @@
             }
             progressArea.innerHTML = progressHTML;
 
-            if (statusData.status === 'completed') {
+            if (statusData.status === 'COMPLETED') {
                 summaryOutput.innerHTML = `<div class="summary-content-box">${statusData.summary_content || "Summary not available."}</div>`;
                 progressArea.innerHTML += '<p class="success">Analysis Complete!</p>';
                 stopPolling();
-            } else if (statusData.status === 'failed') {
+            } else if (statusData.status === 'FAILED') {
                 summaryOutput.innerHTML = ''; // Clear any partial summary
                 const errorMessage = statusData.error_message || 'Analysis failed due to an unknown error.';
                 errorArea.textContent = errorMessage;
@@ -499,11 +499,11 @@
                         <p><strong>Analyzed on:</strong> ${new Date(itemDetail.timestamp).toLocaleString()}</p>
                         <p><strong>Parameters:</strong> Lang: ${itemDetail.parameters_used.lang}, Size: ${itemDetail.parameters_used.size}, Tech: ${itemDetail.parameters_used.technicality}</p>
                     `;
-                    if (itemDetail.status === 'completed' && itemDetail.summary_content) {
+                    if (itemDetail.status === 'COMPLETED' && itemDetail.summary_content) {
                         detailHTML += `<h4>Summary:</h4><div class="summary-content-box">${itemDetail.summary_content}</div>`;
-                    } else if (itemDetail.status === 'failed' && itemDetail.error_message) {
+                    } else if (itemDetail.status === 'FAILED' && itemDetail.error_message) {
                         detailHTML += `<p class="error"><strong>Error:</strong> ${itemDetail.error_message}</p>`;
-                    } else if (itemDetail.status !== 'completed') {
+                    } else if (itemDetail.status !== 'COMPLETED') {
                         detailHTML += `<p><em>Analysis is not yet complete or did not produce a summary.</em></p>`;
                     }
                     historyDetail.innerHTML = detailHTML;

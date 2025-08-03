@@ -186,3 +186,112 @@ footer {
     font-size: 0.9em;
     color: #777;
 }
+
+/* Mobile-first responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+        width: auto;
+    }
+    
+    header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    header h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    
+    .form-group input[type="url"], 
+    .form-group textarea, 
+    .form-group select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px;
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        margin: 10px 0;
+    }
+    
+    .result-item {
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+    
+    .result-item h3 {
+        font-size: 1.1em;
+        margin-bottom: 8px;
+    }
+    
+    .result-item .metadata {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .status-badge {
+        font-size: 0.8em;
+        padding: 4px 8px;
+    }
+    
+    /* Make tables scrollable on mobile */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Improve touch targets */
+    a, button, input, select, textarea {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Better spacing for mobile */
+    h2 {
+        font-size: 1.3em;
+        margin-top: 20px;
+    }
+    
+    .analysis-content {
+        font-size: 0.9em;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        margin: 5px;
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 1.3em;
+    }
+    
+    .form-group label {
+        font-size: 0.9em;
+        margin-bottom: 5px;
+    }
+    
+    .result-item {
+        padding: 10px;
+    }
+}
+
+/* Improve touch interactions */
+button:hover, .btn:hover {
+    transform: none; /* Disable hover effects on touch devices */
+}
+
+@media (hover: hover) {
+    button:hover, .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+}

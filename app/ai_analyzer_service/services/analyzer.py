@@ -26,9 +26,7 @@ try:
     logger.info(f"AI Analyzer: Initialized Gemini model '{settings.AI_MODEL_NAME}'")
 except Exception as e:
     logger.critical(f"AI Analyzer: Failed to initialize Google AI components: {e}", exc_info=True)
-    # This will cause tasks to fail if model is not initialized.
-    # Consider a health check or explicit failure if model is None.
-    model = None # Ensure model is None if init fails
+    exit(1)  
 
 async def generate_summary(text: str, lang: str = 'en', size: str = "medium", technicality: str = "technical") -> str:
     """
@@ -77,9 +75,9 @@ Repository Content:
 End of Repository Content. Generate the HTML summary now.
 """
     try:
-        # Token counting (optional here, but good for debugging/cost estimation)
-        # token_count_response = await model.count_tokens_async(prompt) # If using genai's count_tokens
-        # logger.info(f"AI Analyzer: Prompt token count: {token_count_response.total_tokens}")
+        # Token counting (for debugging/cost estimation)
+        token_count_response = await model.count_tokens_async(prompt) # If using genai's count_tokens
+        logger.info(f"AI Analyzer: Prompt token count: {token_count_response.total_tokens}")
         pass
     except Exception as e:
         logger.error(f"AI Analyzer: Error during token counting (optional step): {e}", exc_info=True)
@@ -97,7 +95,7 @@ End of Repository Content. Generate the HTML summary now.
             # safety_settings=... # configure safety settings if needed
         )
 
-        if hasattr(response, 'prompt_feedback') and response.prompt_feedback.block_reason:
+        if response.prompt_feedback.block_reason:
             reason = response.prompt_feedback.block_reason
             logger.warning(f"AI Analyzer: Content generation blocked. Reason: {reason}")
             raise AIGenerationError(f"Content generation blocked by safety filters: {reason}")

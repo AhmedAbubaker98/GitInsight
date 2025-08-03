@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
         redis_conn.close()
 
 # --- App Setup ---
-APP_DIR = os.path.dirname(os.path.abspath(__file__)) # <--- Add this line (resolves to /app/api_service)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
@@ -91,7 +91,7 @@ else:
 
 # --- Pydantic Models ---
 class AnalyzeRepoRequest(BaseModel):
-    url: HttpUrl # Use HttpUrl for basic validation
+    url: HttpUrl
     lang: str = "en"
     size: str = "medium"
     technicality: str = "technical"
