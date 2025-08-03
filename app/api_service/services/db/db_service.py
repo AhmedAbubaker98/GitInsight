@@ -158,7 +158,3 @@ async def get_analysis_history_for_user(db: AsyncSession, user_github_id: str) -
     )
     result = await db.execute(stmt)
     return result.scalars().all()
-
-# Original get_analysis_by_id and get_analysis_history are renamed/adjusted for clarity
-# get_analysis_by_id -> get_analysis_by_id_for_user (for polling/details)
-# get_analysis_history -> get_analysis_history_for_user (for history tab)

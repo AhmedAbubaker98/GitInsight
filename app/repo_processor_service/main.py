@@ -1,7 +1,7 @@
 import logging
 import os
 from redis import Redis
-from rq import Worker, Connection
+from rq import Worker
 
 from repo_processor_service.core.config import settings
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
         logger.critical(f"Repo Processor Service: Could not connect to Redis. Worker cannot start. Error: {e}", exc_info=True)
         exit(1)
 
-    with Connection(redis_conn):
-        worker = Worker(listen_queues)
-        logger.info(f"Repo Processor Service: Worker starting, listening on queues: {', '.join(listen_queues)}")
-        worker.work(with_scheduler=False) # Set with_scheduler=True if you use RQ Scheduler
+    # Create worker without deprecated Connection context manager
+    worker = Worker(listen_queues, connection=redis_conn)
+    logger.info(f"Repo Processor Service: Worker starting, listening on queues: {', '.join(listen_queues)}")
+    worker.work(with_scheduler=False) # Set with_scheduler=True if you use RQ Scheduler

@@ -174,7 +174,7 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
         _send_status_update(
             analysis_id=analysis_id,
             result_queue_name=result_queue_name,
-            status="processing_repo",
+            status="PROCESSING",
             message="Starting repository cloning and parsing."
         )
 
@@ -197,7 +197,7 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
             _send_status_update(
                 analysis_id=analysis_id,
                 result_queue_name=result_queue_name,
-                status="failed",
+                status="FAILED",
                 error_message=f"Failed to clone repository: {e.stderr[:500]}"
             )
             return
@@ -259,7 +259,7 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
         _send_status_update(
             analysis_id=analysis_id,
             result_queue_name=result_queue_name,
-            status="failed",
+            status="FAILED",
             error_message=f"Internal error during repository processing: {str(e)[:500]}"
         )
     finally:

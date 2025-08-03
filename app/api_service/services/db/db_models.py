@@ -11,11 +11,10 @@ from typing import Optional, Dict, Any
 Base = declarative_base()
 
 class AnalysisStatus(str, enum.Enum):
-    QUEUED = "queued"
-    PROCESSING_REPO = "processing_repo"
-    PROCESSING_AI = "processing_ai"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    QUEUED = "QUEUED"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 class AnalysisHistory(Base):
     __tablename__ = "analysis_history"
@@ -35,12 +34,11 @@ class AnalysisHistory(Base):
         status_value = self.status.value if self.status else None
         return f"<AnalysisHistory(id={self.id}, url='{self.repository_url}', status='{status_value}')>"
 
-# --- Added Pydantic Models for API responses ---
 
 class AnalysisHistoryItem(BaseModel):
     id: int
     repository_url: str
-    timestamp: datetime.datetime # Explicitly use datetime.datetime
+    timestamp: datetime.datetime 
     status: AnalysisStatus
     parameters_used: Dict[str, Any]
 
@@ -48,16 +46,14 @@ class AnalysisHistoryItem(BaseModel):
     model_config = {
         "from_attributes": True
     }
-    # For Pydantic V1, you would use:
-    # class Config:
-    #     orm_mode = True
+
 
 class AnalysisHistoryDetail(BaseModel):
     id: int
     # user_github_id: Optional[str] = None # Decide if this should be exposed in the API
     repository_url: str
-    timestamp: datetime.datetime # Explicitly use datetime.datetime
-    updated_at: datetime.datetime # Explicitly use datetime.datetime
+    timestamp: datetime.datetime #
+    updated_at: datetime.datetime 
     parameters_used: Dict[str, Any]
     summary_content: Optional[str] = None
     status: AnalysisStatus
@@ -67,6 +63,3 @@ class AnalysisHistoryDetail(BaseModel):
     model_config = {
         "from_attributes": True
     }
-    # For Pydantic V1, you would use:
-    # class Config:
-    #     orm_mode = True

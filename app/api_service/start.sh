@@ -11,7 +11,7 @@ echo "Uvicorn PID: $UVICORN_PID"
 
 # Construct Redis URL if not explicitly set, using defaults common in Docker setups.
 # This prioritizes REDIS_URL, then REDIS_HOST/REDIS_PORT, then common defaults.
-EFFECTIVE_REDIS_URL="${REDIS_URL:-redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/0}"
+EFFECTIVE_REDIS_URL="${REDIS_URL:-redis://${REDIS_HOST:-host.docker.internal}:${REDIS_PORT:-6379}/0}"
 
 echo "Starting RQ worker for results queue: ${RESULT_QUEUE:-gitinsight_results}..."
 echo "Redis URL for worker: ${EFFECTIVE_REDIS_URL}" # Log the URL being used
