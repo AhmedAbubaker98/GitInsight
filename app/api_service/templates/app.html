@@ -173,7 +173,7 @@
                     <span>Guest Mode</span>
                     <a href="{{ url_for('route_root') }}" class="button">Login with GitHub</a>
                 {% else %}
-                     <a href="{{ url_for('login_github') }}" class="button">Login with GitHub</a>
+                     <a href="{{ url_for('login_with_github') }}" class="button">Login with GitHub</a>
                 {% endif %}
             </div>
         </div>
@@ -222,9 +222,9 @@
                     <div class="form-group">
                         <label for="technicality">Technical Level:</label>
                         <select id="technicality" name="technicality">
-                            <option value="beginner">Non-Technical</option>
-                            <option value="intermediate">Technical</option>
-                            <option value="technical" selected>Expert</option>
+                            <option value="non-technical">Non-Technical</option>
+                            <option value="technical" selected>Technical</option>
+                            <option value="expert">Expert</option>
                         </select>
                     </div>
                     

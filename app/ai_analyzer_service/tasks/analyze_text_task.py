@@ -22,20 +22,44 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
     using `asyncio.run()` or ensure the worker is async-capable.
     If worker is standard sync RQ worker:
     """
-    import asyncio
+    if not isinstance(task_payload, dict):
+        logger.error("AI Analyzer: Invalid task payload type: %s", type(task_payload).__name__)
+        return
 
     analysis_id = task_payload.get("analysis_id")
     extracted_text = task_payload.get("extracted_text")
-    analysis_params = task_payload.get("analysis_parameters")
+    analysis_params = task_payload.get("analysis_parameters") or {}
     result_queue_name = task_payload.get("result_queue_name")
 
-    if not all([analysis_id, extracted_text, analysis_params, result_queue_name]):
-        logger.error(f"AI Analyzer: Invalid task payload: {task_payload}")
-        return 
+    if extracted_text is None:
+        extracted_text = ""
+    elif not isinstance(extracted_text, str):
+        extracted_text = str(extracted_text)
 
-    logger.info(f"AI Analyzer: Starting AI analysis for analysis_id: {analysis_id}")
+    if not analysis_id or not result_queue_name:
+        logger.error(
+            "AI Analyzer: Invalid task payload for required fields (analysis_id/result_queue_name). payload_keys=%s",
+            list(task_payload.keys()),
+        )
+        return
+
+    if not isinstance(analysis_params, dict):
+        logger.warning(
+            "AI Analyzer: Invalid analysis_parameters type for analysis_id=%s (%s). Falling back to defaults.",
+            analysis_id,
+            type(analysis_params).__name__,
+        )
+        analysis_params = {}
+
+    logger.info(
+        "AI Analyzer: Starting AI analysis for analysis_id=%s (extracted_chars=%d, non_whitespace_chars=%d).",
+        analysis_id,
+        len(extracted_text),
+        len(extracted_text.strip()),
+    )
 
     redis_conn = None
+    result_q = None
     try:
         redis_conn = Redis.from_url(str(settings.REDIS_URL))
         result_q = Queue(result_queue_name, connection=redis_conn)
@@ -47,11 +71,25 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
         )
         logger.info(f"AI Analyzer: Sent 'PROCESSING' status for analysis_id: {analysis_id}")
 
+        if not extracted_text.strip():
+            error_message = "No repository text was extracted for AI summarization."
+            logger.error("AI Analyzer: %s analysis_id=%s", error_message, analysis_id)
+            result_q.enqueue(
+                "api_service.tasks.result_consumer.process_analysis_result",
+                {
+                    "analysis_id": analysis_id,
+                    "status": "FAILED",
+                    "error_message": error_message,
+                },
+            )
+            return
+
         summary_content = await generate_summary(
             text=extracted_text,
             lang=analysis_params.get("lang", "en"),
             size=analysis_params.get("size", "medium"),
-            technicality=analysis_params.get("technicality", "technical")
+            technicality=analysis_params.get("technicality", "technical"),
+            analysis_id=analysis_id,
         )
         
         logger.info(f"AI Analyzer: Successfully generated summary for analysis_id: {analysis_id}")
@@ -62,16 +100,18 @@ async def analyze_text_task_async_wrapper(task_payload: dict):
 
     except (AISummaryError, ValueError, AIInitializationError) as e: # Known, somewhat expected errors
         logger.error(f"AI Analyzer: Error during AI analysis for analysis_id {analysis_id}: {e}", exc_info=True)
-        if redis_conn and result_queue_name:
+        if redis_conn and result_queue_name and result_q is None:
             result_q = Queue(result_queue_name, connection=redis_conn)
+        if result_q:
             result_q.enqueue(
                 "api_service.tasks.result_consumer.process_analysis_result",
                 {"analysis_id": analysis_id, "status": "FAILED", "error_message": str(e)}
             )
     except Exception as e:
         logger.critical(f"AI Analyzer: Unexpected critical error for analysis_id {analysis_id}: {e}", exc_info=True)
-        if redis_conn and result_queue_name:
+        if redis_conn and result_queue_name and result_q is None:
             result_q = Queue(result_queue_name, connection=redis_conn)
+        if result_q:
             result_q.enqueue(
                 "api_service.tasks.result_consumer.process_analysis_result",
                 {"analysis_id": analysis_id, "status": "FAILED", "error_message": f"Unexpected error in AI analysis: {type(e).__name__}"}

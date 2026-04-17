@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional
 from git import Repo, exc as GitExceptions # For cloning
 from redis import Redis # For connecting to Redis
 from rq import Queue # For enqueuing tasks
+from shared_config import shared_settings
 
 # --- Project-specific imports ---
 # Import settings specific to this service
@@ -227,6 +228,10 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
             extracted_text_parts.append(f"--- File: {file_info['path']} ---\n{file_info['content']}\n\n")
         
         final_extracted_text = "".join(extracted_text_parts)
+
+        logger.info(
+            f"[Analysis ID: {analysis_id}] Prepared extracted text payload: {len(final_extracted_text)} chars."
+        )
         
         # Check size of final_extracted_text. If too large, truncate or summarize further.
         # This is a placeholder for actual size management.
@@ -234,6 +239,16 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
         if len(final_extracted_text) > MAX_TEXT_FOR_AI:
             logger.warning(f"[Analysis ID: {analysis_id}] Extracted text is too large ({len(final_extracted_text)} chars), truncating.")
             final_extracted_text = final_extracted_text[:MAX_TEXT_FOR_AI] + "\n\n--- TRUNCATED DUE TO LENGTH ---"
+
+        if not final_extracted_text.strip():
+            logger.error(f"[Analysis ID: {analysis_id}] No text could be extracted from repository.")
+            _send_status_update(
+                analysis_id=analysis_id,
+                result_queue_name=result_queue_name,
+                status="FAILED",
+                error_message="No repository text could be extracted for analysis.",
+            )
+            return
 
 
         ai_task_payload = {
@@ -247,12 +262,12 @@ def process_repo_task(analysis_id: int, repository_url: str, github_token: Optio
         ai_task_function_path = "ai_analyzer_service.tasks.analyze_text_task.analyze_text_task"
         
         _send_to_queue(
-            queue_name=rps_settings.AI_ANALYSIS_QUEUE,
+            queue_name=shared_settings.AI_ANALYSIS_QUEUE,
             task_function_path=ai_task_function_path,
             payload=ai_task_payload,
             analysis_id=analysis_id
         )
-        logger.info(f"[Analysis ID: {analysis_id}] Enqueued data for AI analysis to '{rps_settings.AI_ANALYSIS_QUEUE}'.")
+        logger.info(f"[Analysis ID: {analysis_id}] Enqueued data for AI analysis to '{shared_settings.AI_ANALYSIS_QUEUE}'.")
         
     except Exception as e:
         logger.error(f"[Analysis ID: {analysis_id}] Unhandled error in process_repo_task for {repository_url}: {e}", exc_info=True)

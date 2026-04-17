@@ -2,6 +2,7 @@ import logging
 import os
 from redis import Redis
 from rq import Worker
+from shared_config import shared_settings
 
 from repo_processor_service.core.config import settings
 
@@ -11,7 +12,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-listen_queues = [settings.REPO_PROCESSING_QUEUE]
+listen_queues = [shared_settings.REPO_PROCESSING_QUEUE]
 
 if __name__ == '__main__':
     # Ensure CLONE_TEMP_DIR_BASE exists

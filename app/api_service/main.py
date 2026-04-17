@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 import os
 from datetime import datetime
+import time
 
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -12,9 +13,11 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, HttpUrl
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth, OAuthError
+import httpx
 from redis import Redis
 from rq import Queue
 from sqlalchemy.ext.asyncio import AsyncSession
+from shared_config import shared_settings
 
 from .core.config import settings
 from .services.db.db_service import (
@@ -50,8 +53,8 @@ async def lifespan(app: FastAPI):
         logger.info(f"API Service: Connecting to Redis at {settings.REDIS_URL}...")
         redis_conn = Redis.from_url(str(settings.REDIS_URL))
         redis_conn.ping() # Check connection
-        repo_processing_q = Queue(settings.REPO_PROCESSING_QUEUE, connection=redis_conn)
-        # ai_analysis_q = Queue(settings.AI_ANALYSIS_QUEUE, connection=redis_conn) # Not directly used by API
+        repo_processing_q = Queue(shared_settings.REPO_PROCESSING_QUEUE, connection=redis_conn)
+        # ai_analysis_q = Queue(shared_settings.AI_ANALYSIS_QUEUE, connection=redis_conn) # Not directly used by API
         logger.info("API Service: Connected to Redis and queues initialized.")
     except Exception as e:
         logger.critical(f"API Service: Failed to connect to Redis or initialize queues: {e}", exc_info=True)
@@ -117,6 +120,87 @@ async def get_current_user(request: Request) -> Optional[Dict]:
 
 async def get_github_token(request: Request) -> Optional[str]:
     return request.session.get("github_token")
+
+
+async def _probe_lmstudio() -> Dict[str, Any]:
+    """Probe LM Studio OpenAI-compatible endpoint with a minimal completion request."""
+    if not settings.AI_LMSTUDIO_BASE_URL:
+        return {
+            "healthy": False,
+            "configured": False,
+            "message": "AI_LMSTUDIO_BASE_URL is not set.",
+        }
+
+    if not settings.AI_MODEL_NAME:
+        return {
+            "healthy": False,
+            "configured": False,
+            "message": "AI_MODEL_NAME is not set.",
+        }
+
+    endpoint = (
+        f"{str(settings.AI_LMSTUDIO_BASE_URL).rstrip('/')}/"
+        f"{settings.AI_LMSTUDIO_CHAT_ENDPOINT.lstrip('/')}"
+    )
+
+    headers = {"Content-Type": "application/json"}
+    if settings.AI_LMSTUDIO_API_KEY:
+        headers["Authorization"] = f"Bearer {settings.AI_LMSTUDIO_API_KEY}"
+
+    payload = {
+        "model": settings.AI_MODEL_NAME,
+        "messages": [{"role": "user", "content": "Reply with OK."}],
+        "temperature": 0,
+        "max_tokens": 8,
+    }
+
+    started = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=settings.AI_REQUEST_TIMEOUT_SECONDS) as client:
+            response = await client.post(endpoint, headers=headers, json=payload)
+        latency_ms = int((time.perf_counter() - started) * 1000)
+
+        response.raise_for_status()
+        data = response.json()
+        choices = data.get("choices") or []
+        first_message = choices[0].get("message") if choices else None
+        content = first_message.get("content") if first_message else None
+        reasoning = first_message.get("reasoning") if first_message else None
+
+        has_output = False
+        if isinstance(content, str) and content.strip():
+            has_output = True
+        elif isinstance(content, list) and len(content) > 0:
+            has_output = True
+        elif isinstance(reasoning, str) and reasoning.strip():
+            has_output = True
+
+        if not has_output:
+            return {
+                "healthy": False,
+                "configured": True,
+                "endpoint": endpoint,
+                "latency_ms": latency_ms,
+                "message": "LM Studio responded but no content/reasoning was returned.",
+            }
+
+        return {
+            "healthy": True,
+            "configured": True,
+            "endpoint": endpoint,
+            "latency_ms": latency_ms,
+            "output_mode": "reasoning" if isinstance(reasoning, str) and reasoning.strip() and not (isinstance(content, str) and content.strip()) else "content",
+            "message": "LM Studio responded successfully.",
+        }
+    except Exception as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        return {
+            "healthy": False,
+            "configured": True,
+            "endpoint": endpoint,
+            "latency_ms": latency_ms,
+            "message": f"LM Studio probe failed: {type(exc).__name__}: {exc}",
+        }
 
 # --- Routes ---
 @app.get("/", response_class=HTMLResponse)
@@ -186,6 +270,46 @@ async def route_app(request: Request, user: Optional[dict] = Depends(get_current
     )
 
 
+@app.get("/health/ai", response_class=JSONResponse)
+async def health_ai_endpoint():
+    provider = (settings.AI_PROVIDER or "gemini").strip().lower()
+    base_payload = {
+        "provider": provider,
+        "model": settings.AI_MODEL_NAME,
+    }
+
+    if provider == "lmstudio":
+        lmstudio_status = await _probe_lmstudio()
+        status_code = status.HTTP_200_OK if lmstudio_status.get("healthy") else status.HTTP_503_SERVICE_UNAVAILABLE
+        return JSONResponse(
+            status_code=status_code,
+            content={**base_payload, **lmstudio_status},
+        )
+
+    if provider == "gemini":
+        has_key = bool(settings.AI_ANALYZER_MY_GOOGLE_API_KEY)
+        content = {
+            **base_payload,
+            "healthy": has_key,
+            "configured": has_key,
+            "message": "Gemini API key configured." if has_key else "Gemini API key missing.",
+        }
+        return JSONResponse(
+            status_code=status.HTTP_200_OK if has_key else status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=content,
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={
+            **base_payload,
+            "healthy": False,
+            "configured": False,
+            "message": f"Unsupported AI provider '{provider}'.",
+        },
+    )
+
+
 @app.post("/analyze/repo", status_code=status.HTTP_202_ACCEPTED)
 async def analyze_repo_endpoint(
     payload: AnalyzeRepoRequest,
@@ -226,7 +350,7 @@ async def analyze_repo_endpoint(
         "repository_url": str(payload.url),
         "github_token": token,
         "analysis_parameters": analysis_parameters,
-        "result_queue_name": settings.RESULT_QUEUE
+        "result_queue_name": shared_settings.RESULT_QUEUE
     }
 
     try:

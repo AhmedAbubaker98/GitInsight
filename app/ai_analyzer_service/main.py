@@ -1,6 +1,7 @@
 import logging
 from redis import Redis
 from rq import Worker
+from shared_config import shared_settings
 
 from ai_analyzer_service.core.config import settings
 
@@ -10,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-listen_queues = [settings.AI_ANALYSIS_QUEUE]
+listen_queues = [shared_settings.AI_ANALYSIS_QUEUE]
 
 if __name__ == '__main__':
     try:
@@ -21,9 +22,11 @@ if __name__ == '__main__':
         logger.critical(f"AI Analyzer Service: Could not connect to Redis. Worker cannot start. Error: {e}", exc_info=True)
         exit(1)
     
-    if not settings.AI_ANALYZER_MY_GOOGLE_API_KEY:
-        logger.critical("AI Analyzer Service: AI_ANALYZER_MY_GOOGLE_API_KEY is not set. AI tasks will fail.")
-        exit(1)
+    logger.info(
+        "AI Analyzer Service: Using provider '%s' with model '%s'.",
+        settings.AI_PROVIDER,
+        settings.AI_MODEL_NAME,
+    )
 
     # Create worker without deprecated Connection context manager
     worker = Worker(listen_queues, connection=redis_conn)
